@@ -1,0 +1,312 @@
+import React from "react"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+  ItemGroup,
+} from "@/components/ui/item"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { categoryColor } from "./grades-stats"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Trash2, Edit, Save } from 'lucide-react'
+
+export const gradeAndColor = (grade, badges = null) => {
+  if (!grade || grade === '') grade = "···";
+  else grade = parseFloat(grade).toPrecision(4);
+
+  if (badges && badges.includes("exempt")) {
+    return { grade: "X", gradeColor: "bg-sky-500" }
+  }
+
+  if (badges && (badges.includes("dropped") || badges.includes("excluded"))) {
+    return { grade: grade, gradeColor: "bg-gray-400" }
+  }
+
+  if (badges && badges.includes("missing")) {
+    return { grade: grade, gradeColor: "bg-red-500" }
+  }
+
+  if (grade === "···") return { grade: grade, gradeColor: "bg-gray-400" };
+  if (grade >= 90) return { grade: grade, gradeColor: "bg-green-500" }
+  if (grade >= 80) return { grade: grade, gradeColor: "bg-blue-500" }
+  if (grade >= 70) return { grade: grade, gradeColor: "bg-yellow-500" }
+  return { grade: grade, gradeColor: "bg-red-500" }
+}
+
+export function GradesList({ variant, children }) {
+  const width = variant === "card" ? '175px' : '250px';
+
+  const injectVariant = (el) => {
+    if (!React.isValidElement(el)) return el;
+    const t = el.type;
+    if (typeof t === 'string') {
+      const children = el.props.children;
+      if (!children) return el;
+      const newChildren = React.Children.map(children, injectVariant);
+      if (newChildren === children) return el;
+      return React.cloneElement(el, undefined, newChildren);
+    }
+    return React.cloneElement(el, { variant });
+  }
+
+  return (
+    <div
+      className='gap-2'
+      style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${width}, 1fr))`, justifyItems: 'stretch' }}
+    >
+      {children && React.Children.map(children, child => injectVariant(child))}
+    </div>
+  )
+}
+
+export function GradesItem({ courseName, id, grade, variant }) {
+  const { grade: gradeValue, gradeColor } = gradeAndColor(grade);
+  return variant === "card" ? (
+    <Card className="w-full pt-0 overflow-hidden pb-2 gap-3 max-w-[350px] min-w-[175px] cursor-pointer hover:bg-accent transition-colors">
+      <CardHeader
+        className="relative flex flex-col justify-center items-center m-0 p-4 py-5 overflow-hidden gap-2"
+        style={{ backgroundColor: 'black' }}
+      >
+        <div
+          aria-hidden
+          className="z-1 absolute inset-0 pointer-events-none bg-primary/80 dark:bg-primary/40"
+        />
+        <span className={`text-[2.5rem]/10 relative z-2 text-white`}>
+          {gradeValue}
+        </span>
+        <div className={`z-2 flex w-full text-sm justify-center items-center gap-2`}>
+          <span className="text-white">0%</span>
+          <Progress value={gradeValue} className="border-1 border-white h-2" dark={true} />
+          <span className="text-white">100%</span>
+        </div>
+      </CardHeader>
+      <CardContent className="px-3">
+        <CardTitle className="truncate mb-[2px]">{courseName}</CardTitle>
+        <CardDescription className="truncate">{id}</CardDescription>
+      </CardContent>
+    </Card>
+  ) : (
+    <Item variant="outline" className="p-2 max-w-[500px] min-w-[250px] cursor-pointer hover:bg-accent transition-colors">
+      <div className="flex w-full items-center justify-between">
+        <ItemContent className="gap-0 ml-1 mr-3 min-w-0">
+          <ItemTitle className="text-base font-semibold truncate block">{courseName}</ItemTitle>
+          <ItemDescription className="truncate block">
+            {id}
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions className="flex-shrink-0">
+          <span className={`block font-semibold tracking-wide text-[1.5rem] text-white text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] ${gradeColor} min-w-[86px]`}>
+            {gradeValue}
+          </span>
+        </ItemActions>
+      </div>
+    </Item>
+  )
+}
+
+export function ClassGradesList({ children }) {
+  const width = '275px';
+  return (
+    <div
+      className='gap-2'
+      style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${width}, 1fr))`, justifyItems: 'stretch' }}
+    >
+      {children && React.Children.map(children, child => child)}
+    </div>
+  )
+}
+
+export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditPercentage }) {
+  const [isOpen, setIsOpen] = React.useState(false)
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [editingPercentage, setEditingPercentage] = React.useState(String(scoreData.percentage || ''))
+  const assignmentName = scoreData.name
+  const date = scoreData.dateDue
+  const displayGrade = scoreData.weight !== undefined && scoreData.percentage !== undefined ? scoreData.percentage : scoreData.score
+  const { grade, gradeColor } = gradeAndColor(displayGrade, scoreData.badges)
+  const category = scoreData.category
+  const badgeColors = {
+    "missing": "bg-red-500",
+    "exempt": "bg-sky-500",
+    "dropped": "bg-gray-400",
+  };
+  const badgeLabels = {
+    "missing": "M",
+    "exempt": "X",
+    "dropped": "D",
+  };
+
+  const handleDelete = () => {
+    setIsOpen(false)
+    if (onRemove) {
+      onRemove()
+    }
+  }
+
+  const handleSavePercentage = () => {
+    if (onEditPercentage) {
+      onEditPercentage(parseFloat(editingPercentage) || 0)
+    }
+    setIsEditing(false)
+  }
+
+  const handleEditClick = () => {
+    setIsEditing(true)
+    setEditingPercentage(String(scoreData.percentage || ''))
+  }
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Item variant="outline" className="p-2 max-w-[1000px] min-w-[275px] cursor-pointer hover:bg-accent transition-colors">
+          <div className="flex w-full items-center justify-between">
+            <div className={`h-[44px] w-5 rounded-sm mr-1 ${categoryColor(category)}`} />
+            <ItemContent className="gap-0 ml-1 mr-3 min-w-0">
+              <ItemTitle className="text-base font-semibold truncate block">{assignmentName}</ItemTitle>
+              <ItemDescription className="truncate block">
+                {scoreData.badges && scoreData.badges.map((badge) => (
+                  <Badge key={badge} className={`px-1 py-0 mr-1 ${badgeColors[badge] || ''}`}>
+                    {badgeLabels[badge] || badge}
+                  </Badge>
+                ))}
+                {date}
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions className="flex-shrink-0">
+              <span className={`block font-semibold tracking-wide text-[1.35rem] text-white text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] min-w-[76px] ${gradeColor} ${scoreData.badges.includes('dropped') || scoreData.excluded ? 'line-through' : ''}`}>
+                {grade}
+              </span>
+            </ItemActions>
+          </div>
+        </Item>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        <div className="grid gap-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <h4 className="font-medium leading-none">{assignmentName}</h4>
+              <p className="text-sm text-muted-foreground">
+                Assignment details
+              </p>
+            </div>
+            {scoreData.percentage !== undefined && onEditPercentage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={isEditing ? handleSavePercentage : handleEditClick}
+                className="ml-2 p-2"
+              >
+                {isEditing ? <Save className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+              </Button>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="text-sm font-medium">Category:</span>
+              <span className="text-sm">{category}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="text-sm font-medium">Due Date:</span>
+              <span className="text-sm">{date}</span>
+            </div>
+            {scoreData.dateAssigned && (
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium">Assigned:</span>
+                <span className="text-sm">{scoreData.dateAssigned}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="text-sm font-medium">Score:</span>
+              <span className="text-sm">{scoreData.score !== undefined ? parseFloat(scoreData.score).toFixed(2) : (grade || 'Not graded')}</span>
+            </div>
+            {scoreData.totalPoints !== undefined && (
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium">Max Points:</span>
+                <span className="text-sm">{scoreData.totalPoints}</span>
+              </div>
+            )}
+            {scoreData.percentage !== undefined && (
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium">Percentage:</span>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editingPercentage}
+                    onChange={(e) => setEditingPercentage(e.target.value)}
+                    className="h-8"
+                    placeholder={String(scoreData.percentage || '0')}
+                  />
+                ) : (
+                  <span className="text-sm">{scoreData.percentage}</span>
+                )}
+              </div>
+            )}
+            {scoreData.weight !== undefined && (
+              <div className="grid grid-cols-2 items-center gap-4">
+                <span className="text-sm font-medium">Weight:</span>
+                <span className="text-sm">{scoreData.weight}</span>
+              </div>
+            )}
+            {scoreData.badges && scoreData.badges.length > 0 && (
+              <div className="grid grid-cols-2 items-start gap-4">
+                <span className="text-sm font-medium">Badges:</span>
+                <span className="text-sm">
+                  {scoreData.badges && scoreData.badges.map((badge) => (
+                    <Badge key={badge} className={`px-1 py-0 mr-1 ${badgeColors[badge] || ''}`}>
+                      {badge.toUpperCase()}
+                    </Badge>
+                  ))}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {onToggleExcluded && (
+              <label className="hover:bg-accent/50 flex items-center gap-3 rounded-lg border p-2 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/10 flex-1">
+                <Checkbox
+                  checked={scoreData.excluded || false}
+                  onCheckedChange={onToggleExcluded}
+                  className="data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-white"
+                />
+                <p className="text-sm leading-none font-medium">
+                  Disable
+                </p>
+              </label>
+            )}
+            {onRemove && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                className="flex-1"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}

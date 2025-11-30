@@ -1,0 +1,11 @@
+.login-gradient {
+    mask: linear-gradient(90deg, transparent, black, black);
+    backdrop-filter: blur(100px);
+}
+
+.login-page {
+    flex: 0 0 100%;
+    height: fit-content;
+    max-width: 100%;
+    @apply flex flex-col items-center justify-center;
+}

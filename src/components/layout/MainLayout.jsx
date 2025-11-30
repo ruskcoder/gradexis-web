@@ -1,0 +1,30 @@
+import { AppSidebar } from "@/components/layout/app-sidebar"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { Navigate } from "react-router-dom";
+import { useStore } from '@/lib/store';
+
+export default function MainLayout({ children }) {
+  const currentUserIndex = useStore((state) => state.currentUserIndex);
+  const users = useStore((state) => state.users);
+
+  const notLogged = (currentUserIndex == -1 || users.length == 0);
+
+  return (
+    <>
+      {notLogged && <div>You must be logged in to access this. </div>}
+      {!notLogged && <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <div className="p-8 h-full">
+            {/* <SidebarTrigger className="-ml-1" /> */}
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>}
+    </>
+  );
+}
