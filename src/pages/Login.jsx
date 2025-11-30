@@ -145,9 +145,11 @@ export default function Login() {
         className="fixed inset-0 w-full h-full object-cover -z-10"
         fetchPriority="high"
       />
+      
+      <div className="login-mobile-blur" />
 
-      <div className="absolute right-0 top-0 h-full w-5/6 flex items-center justify-center pl-[calc(100vw/3)]">
-        <div className="absolute inset-0 login-gradient" />
+      <div className="absolute right-0 top-0 h-full w-5/6 flex items-center justify-center pl-[calc(100vw/3)] max-sm:fixed max-sm:left-0 max-sm:top-0 max-sm:h-screen max-sm:w-full max-sm:pl-0 max-sm:z-10 max-sm:justify-center">
+        <div className="absolute inset-0 login-gradient max-sm:hidden" />
 
         <div className="relative z-10 w-full max-w-md p-8">
           <div className="bg-white/40 rounded-2xl p-6 shadow-sm border overflow-clip">

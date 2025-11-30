@@ -3,6 +3,24 @@
     backdrop-filter: blur(100px);
 }
 
+.login-mobile-blur {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .login-gradient {
+        display: none !important;
+    }
+
+    .login-mobile-blur {
+        display: block;
+        position: fixed;
+        inset: 0;
+        backdrop-filter: blur(10px);
+        z-index: 5;
+    }
+}
+
 .login-page {
     flex: 0 0 100%;
     height: fit-content;
