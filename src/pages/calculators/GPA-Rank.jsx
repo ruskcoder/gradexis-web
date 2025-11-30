@@ -498,7 +498,7 @@ export default function GPARankCalculator() {
 
 	return (
 		<div className="space-y-8 flex flex-col">
-			{showTitle && <h1 className="text-4xl font-bold">Final Exam Calculator</h1>}
+			{showTitle && <h1 className="text-4xl font-bold">GPA & Rank Calculator</h1>}
 
 			<PremiumDialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog} />
 
