@@ -20,7 +20,7 @@ export default function MainLayout({ children }) {
         <AppSidebar />
         <SidebarInset>
           <div className="p-8 h-full">
-            {/* <SidebarTrigger className="-ml-1" /> */}
+            <SidebarTrigger className="-ml-1 md:hidden" />
             {children}
           </div>
         </SidebarInset>
