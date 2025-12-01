@@ -99,13 +99,13 @@ export default function Calendar({ initialMonth = new Date().getMonth(), initial
   return (
     <div className='bg-card rounded-xl p-0 border flex flex-col align-center w-full h-full'>
       <div className='flex items-center p-2'>
-        <Button variant="outline" className='h-8 w-8' onClick={handlePrevMonth}>
+        <Button variant="outline" className='h-8 w-8' onClick={handlePrevMonth} disabled={loading}>
           <ChevronLeft />
         </Button>
         <div className='flex-1 text-center font-medium text-xl'>
           {monthNames[month]} {year}
         </div>
-        <Button variant="outline" className='h-8 w-8' onClick={handleNextMonth}>
+        <Button variant="outline" className='h-8 w-8' onClick={handleNextMonth} disabled={loading}>
           <ChevronRight />
         </Button>
       </div>
