@@ -71,7 +71,7 @@ export default function Settings() {
       <div className="mt-6 space-y-8">
         <section>
           <h2 className="text-lg font-semibold">Referrals</h2>
-          <p className="text-sm text-muted-foreground mt-1">Manage your referral code and status.</p>
+          <p className="text-sm text-muted-foreground mt-1">Share this code to others when they sign-in for the first time to gain more referrals.</p>
 
           <div className="mt-4 flex items-center gap-10">
             {referralCode && (
