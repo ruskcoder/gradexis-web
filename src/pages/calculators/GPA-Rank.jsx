@@ -502,6 +502,7 @@ export default function GPARankCalculator() {
 
 			<PremiumDialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog} />
 
+			<p className="text-red-500">The GPA Calculator currently has a known bug of adding double (two semesters) when calculating.</p>
 			<ResizablePanelGroup direction="horizontal" className="space-x-2">
 				
 				<ResizablePanel className="relative bg-card rounded-xl border flex flex-col min-w-[400px]">
