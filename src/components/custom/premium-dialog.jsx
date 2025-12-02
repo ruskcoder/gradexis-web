@@ -28,7 +28,7 @@ export function PremiumDialog({ open, onOpenChange, onCancel, showCancel = false
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent onEscapeKeyDown={(e) => { e.preventDefault(); e.stopPropagation(); }}>
         <AlertDialogHeader>
           <AlertDialogTitle>Referrals Required</AlertDialogTitle>
           <AlertDialogDescription>

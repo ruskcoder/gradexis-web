@@ -70,6 +70,7 @@ export default function Login() {
           username: data.username || username,
           password,
           platform,
+          school: data.school || '',
           district: data.district,
           link: data.link || link,
           name: data.name || '',

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -17,6 +17,9 @@ import ScheduleEditor from './pages/academics/ScheduleEditor';
 import FinalExamCalculator from './pages/calculators/FinalExam';
 import GPARankCalculator from './pages/calculators/GPA-Rank';
 import { useStore } from '@/lib/store';
+import { fetchReferralData } from './pages/Settings';
+import { useCurrentUser } from '@/lib/store';
+import { login } from '@/lib/grades-api';
 
 function ProtectedRoute({ children }) {
   const currentUserIndex = useStore((state) => state.currentUserIndex);
@@ -33,7 +36,27 @@ function ProtectedRoute({ children }) {
 export default function App() {
   const currentUserIndex = useStore((state) => state.currentUserIndex);
   const users = useStore((state) => state.users);
+  const currentUser = useCurrentUser();
   const notLogged = currentUserIndex === -1 || users.length === 0;
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const loginDetails = {
+      username: currentUser.username,
+      password: currentUser.password,
+      link: currentUser.link,
+      clsession: currentUser.clsession,
+    };
+
+    login(currentUser.platform, currentUser.loginType || 'credentials', loginDetails).catch((err) => {});
+
+    try {
+      fetchReferralData(currentUser, useStore.getState().changeUserData).catch(() => {});
+    } catch (e) {
+      // 
+    }
+  }, [currentUser]);
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="gradexis-theme">

@@ -24,6 +24,7 @@ export interface User {
   name: string;
   avatar: string;
   district: string;
+  school: string;
   theme: 'light' | 'dark';
   color: string;
   gradesView: 'card' | 'list';
@@ -46,6 +47,7 @@ const DEFAULT_USER: User = {
   name: '',
   avatar: '',
   district: '',
+  school: '',
   theme: 'light',
   color: 'blue',
   gradesView: 'list',

@@ -17,6 +17,33 @@ import { Button } from '@/components/ui/button'
 import { useTheme } from '@/components/theme-provider'
 import { GradesItem } from '@/components/custom/grades-item'
 
+export async function fetchReferralData(user, changeUserData, {
+  setReferralCode,
+  setReferralStatus,
+  setLoading,
+} = {}) {
+  if (!user) return
+
+  if (setLoading) setLoading(true)
+  try {
+    const codeResponse = await fetch(`${API_URL}referral-code?username=${encodeURIComponent(user.username)}`)
+    const codeData = await codeResponse.json()
+    if (setReferralCode) setReferralCode(codeData.referralCode || 'N/A')
+
+    const statusResponse = await fetch(`${API_URL}referral-status?username=${encodeURIComponent(user.username)}`)
+    const statusData = await statusResponse.json()
+    const status = statusData.numberOfReferrals || 0
+    if (setReferralStatus) setReferralStatus(status)
+
+    const isPremium = status >= 5
+    changeUserData('premium', isPremium)
+  } catch (error) {
+    console.error('Failed to fetch referral data:', error)
+  } finally {
+    if (setLoading) setLoading(false)
+  }
+}
+
 export default function Settings() {
   const user = useCurrentUser()
   const changeUserData = useStore((s) => s.changeUserData)
@@ -25,32 +52,9 @@ export default function Settings() {
   const [referralCode, setReferralCode] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const fetchReferralData = async () => {
-    if (!user) return
-
-    setLoading(true)
-    try {
-      const codeResponse = await fetch(`${API_URL}referral-code?username=${encodeURIComponent(user.username)}`)
-      const codeData = await codeResponse.json()
-      setReferralCode(codeData.referralCode || 'N/A')
-      
-      const statusResponse = await fetch(`${API_URL}referral-status?username=${encodeURIComponent(user.username)}`)
-      const statusData = await statusResponse.json()
-      const status = statusData.numberOfReferrals || 0
-      setReferralStatus(status)
-
-      const isPremium = status >= 5
-      changeUserData('premium', isPremium)
-    } catch (error) {
-      console.error('Failed to fetch referral data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   React.useEffect(() => {
     if (user?.username) {
-      fetchReferralData()
+      fetchReferralData(user, changeUserData, { setReferralCode, setReferralStatus, setLoading })
     }
   }, [])
 
@@ -88,7 +92,7 @@ export default function Settings() {
               </div>
             )}
 
-            <Button onClick={fetchReferralData} disabled={loading} className="self-end">
+            <Button onClick={() => fetchReferralData(user, changeUserData, { setReferralCode, setReferralStatus, setLoading })} disabled={loading} className="self-end">
               {loading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>
