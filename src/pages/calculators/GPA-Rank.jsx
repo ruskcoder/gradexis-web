@@ -696,7 +696,7 @@ export default function GPARankCalculator() {
 
 					<div className="p-4 flex-1 overflow-y-auto space-y-4">
 						<div className="space-y-2">
-							<p className='text-muted-foreground text-sm'>Disclaimer: This calculator does not account for repeated ranks.</p>
+							<p className='text-muted-foreground text-sm'>Disclaimer: This calculator does not account for repeated ranks and is JUST a linear regression. You will need 10+ data points for accurate results. </p>
 							<label className="text-sm font-medium">Enter some known GPA's and Ranks</label>
 							<div className="border rounded-lg overflow-x-auto max-h-48 overflow-y-auto mt-1">
 								<Table className="text-sm">
