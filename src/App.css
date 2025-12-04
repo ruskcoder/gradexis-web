@@ -7,7 +7,9 @@
   * {
     @apply border-border outline-ring/50;
   }
-
+  [data-sonner-toast][data-styled=true] [data-icon] {
+    width: auto !important;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Lexend', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';

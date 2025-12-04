@@ -20,6 +20,10 @@ import { useStore } from '@/lib/store';
 import { fetchReferralData } from './pages/Settings';
 import { useCurrentUser } from '@/lib/store';
 import { login } from '@/lib/grades-api';
+import { toast } from "sonner"
+import { Toaster } from '@/components/ui/sonner';
+import { API_URL } from '@/lib/constants';
+import { Megaphone } from 'lucide-react';
 
 function ProtectedRoute({ children }) {
   const currentUserIndex = useStore((state) => state.currentUserIndex);
@@ -49,14 +53,49 @@ export default function App() {
       clsession: currentUser.clsession,
     };
 
-    login(currentUser.platform, currentUser.loginType || 'credentials', loginDetails).catch((err) => {});
-
     try {
       fetchReferralData(currentUser, useStore.getState().changeUserData).catch(() => {});
     } catch (e) {
       // 
     }
-  }, [currentUser]);
+
+    (async () => {
+      try {
+        const resp = await fetch(`${API_URL}web-notifications?username=${encodeURIComponent(currentUser.username)}`)
+        if (!resp.ok) return
+        const body = await resp.json()
+        const items = Array.isArray(body?.data) ? body.data : []
+
+        const lastLoginDate = currentUser?.lastLogin ? new Date(currentUser.lastLogin) : new Date(0)
+
+        let showed = false
+        for (const it of items) {
+          const created = it?.created_at ? new Date(it.created_at) : null
+          if (!created) continue
+          if (created > lastLoginDate) {
+            try {
+              toast('New Notification', {
+                duration: 7000,
+                position: 'top-right',
+                description: it.notification || 'Unable to load notification content.',
+                icon: <div className="w-8 h-8 bg-primary flex items-center justify-center rounded-lg">
+                  <Megaphone className='w-5 h-5 text-primary-foreground' />
+                </div>,
+                closeButton: true,
+              })
+              showed = true
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        }
+        useStore.getState().changeUserData('lastLogin', new Date().toISOString())
+      } catch (e) {
+        console.log(e);
+      }
+    })()
+
+  }, []);
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="gradexis-theme">
@@ -79,6 +118,7 @@ export default function App() {
           <Route path="*" element={<div className="p-6">Not Found</div>} />
         </Routes>
       </BrowserRouter>
+      <Toaster />
     </ThemeProvider>
   );
 }

@@ -23,19 +23,18 @@ export async function fetchReferralData(user, changeUserData, {
   setLoading,
 } = {}) {
   if (!user) return
-
   if (setLoading) setLoading(true)
   try {
-    const codeResponse = await fetch(`${API_URL}referral-code?username=${encodeURIComponent(user.username)}`)
-    const codeData = await codeResponse.json()
-    if (setReferralCode) setReferralCode(codeData.referralCode || 'N/A')
+    const response = await fetch(`${API_URL}referral?username=${encodeURIComponent(user.username)}`)
+    const data = await response.json()
 
-    const statusResponse = await fetch(`${API_URL}referral-status?username=${encodeURIComponent(user.username)}`)
-    const statusData = await statusResponse.json()
-    const status = statusData.numberOfReferrals || 0
-    if (setReferralStatus) setReferralStatus(status)
+    const referralCode = data.referralCode || 'N/A'
+    const numberOfReferrals = data.numberOfReferrals ?? 0
 
-    const isPremium = status >= 5
+    if (setReferralCode) setReferralCode(referralCode)
+    if (setReferralStatus) setReferralStatus(numberOfReferrals)
+
+    const isPremium = numberOfReferrals >= 5
     changeUserData('premium', isPremium)
   } catch (error) {
     console.error('Failed to fetch referral data:', error)

@@ -31,6 +31,7 @@ export interface User {
   showPageTitles?: boolean;
   bellSchedules: BellSchedule[];
   premium: boolean;
+  lastLogin: Date;
   courseTypesByCourseName: Record<string, string>;
   deletedTranscriptCourses: string[];
   customCourses: Array<{ courseName: string; grade: string; type: string }>;
@@ -54,6 +55,7 @@ const DEFAULT_USER: User = {
   showPageTitles: true,
   bellSchedules: [],
   premium: false,
+  lastLogin: new Date(),
   courseTypesByCourseName: {},
   deletedTranscriptCourses: [],
   customCourses: [],
@@ -154,6 +156,39 @@ export const useStore = create<UserStore>()(
         users: state.users,
         currentUserIndex: state.currentUserIndex,
       }),
+      onRehydrateStorage: () => (persistedState) => {
+        try {
+          if (!persistedState || !Array.isArray(persistedState.users)) return
+
+          const mergedUsers = persistedState.users.map((u: Partial<User>) => {
+            return {
+              ...DEFAULT_USER,
+              ...u,
+            } as User
+          })
+
+          let idx = -1
+          const rawIdx: any = (persistedState as any).currentUserIndex
+          if (typeof rawIdx === 'number') {
+            idx = rawIdx
+          } else if (typeof rawIdx === 'string' && rawIdx.trim() !== '') {
+            const parsed = parseInt(rawIdx, 10)
+            if (!isNaN(parsed)) idx = parsed
+          }
+
+          if (idx >= mergedUsers.length) {
+            idx = mergedUsers.length - 1
+          }
+          if (idx < -1) {
+            idx = -1
+          }
+
+          ;(persistedState as any).users = mergedUsers
+          ;(persistedState as any).currentUserIndex = idx
+        } catch (e) {
+          console.error(e)
+        }
+      },
     }
   )
 );
