@@ -31,6 +31,7 @@ import Logo from '@/assets/img/logo-rounded.png';
 import { districts, PLATFORM_MAPPING } from '@/lib/constants';
 import { login } from '@/lib/grades-api';
 import { useStore } from '@/lib/store';
+import { showWebNotificationsForUser } from '@/App';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -61,7 +62,6 @@ export default function Login() {
         link,
       };
       const data = await login(platform, loginType, loginDetails, referralCode);
-      console.log('Login successful:', data);
 
       if (data && data.success) {
         let avatar = ((data.name || '').split(/\s+/).filter(Boolean).slice(0,2).map(n => (n[0] || '').toUpperCase()).join(''))
@@ -78,7 +78,11 @@ export default function Login() {
         });
 
         const users = useStore.getState().users;
-        setCurrentUserIndex(Math.max(0, users.length - 1));
+        const newIndex = Math.max(0, useStore.getState().users.length - 1);
+        setCurrentUserIndex(newIndex);
+
+        const newUser = useStore.getState().users[newIndex];
+        try { showWebNotificationsForUser(newUser) } catch (e) {  }
 
         navigate('/dashboard');
       } else {

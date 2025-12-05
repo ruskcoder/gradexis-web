@@ -31,7 +31,7 @@ export interface User {
   showPageTitles?: boolean;
   bellSchedules: BellSchedule[];
   premium: boolean;
-  lastLogin: Date;
+  lastLogin: Date | null;
   courseTypesByCourseName: Record<string, string>;
   deletedTranscriptCourses: string[];
   customCourses: Array<{ courseName: string; grade: string; type: string }>;
@@ -55,7 +55,7 @@ const DEFAULT_USER: User = {
   showPageTitles: true,
   bellSchedules: [],
   premium: false,
-  lastLogin: new Date(),
+  lastLogin: null,
   courseTypesByCourseName: {},
   deletedTranscriptCourses: [],
   customCourses: [],

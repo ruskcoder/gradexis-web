@@ -25,6 +25,48 @@ import { Toaster } from '@/components/ui/sonner';
 import { API_URL } from '@/lib/constants';
 import { Megaphone } from 'lucide-react';
 
+export async function showWebNotificationsForUser(currentUser) {
+  if (!currentUser) return
+
+  try {
+    const resp = await fetch(`${API_URL}web-notifications?username=${encodeURIComponent(currentUser.username)}`)
+    if (!resp.ok) return
+    const body = await resp.json()
+    const items = Array.isArray(body?.data) ? body.data : []
+
+    const lastLoginDate = currentUser?.lastLogin ? new Date(currentUser.lastLogin) : null
+
+    for (const it of items) {
+      const created = it?.created_at ? new Date(it.created_at) : null
+      if (!created) continue
+      if (it.show_on_login && (lastLoginDate == null || created > lastLoginDate)) {
+        try {
+          toast(it.title || "New Notification", {
+            duration: 7000,
+            position: 'top-right',
+            description: it.notification || 'Unable to load notification content.',
+            icon: <div className="w-8 h-8 bg-primary flex items-center justify-center rounded-lg">
+              <Megaphone className='w-5 h-5 text-primary-foreground' />
+            </div>,
+            closeButton: true,
+          })
+        } catch (e) {
+          // ignore toast errors
+        }
+      }
+    }
+
+    // update lastLogin so we don't re-show the same notifications
+    try {
+      useStore.getState().changeUserData('lastLogin', new Date().toISOString())
+    } catch (e) {
+      // ignore
+    }
+  } catch (e) {
+    // ignore notification errors
+  }
+}
+
 function ProtectedRoute({ children }) {
   const currentUserIndex = useStore((state) => state.currentUserIndex);
   const users = useStore((state) => state.users);
@@ -46,54 +88,14 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const loginDetails = {
-      username: currentUser.username,
-      password: currentUser.password,
-      link: currentUser.link,
-      clsession: currentUser.clsession,
-    };
-
     try {
       fetchReferralData(currentUser, useStore.getState().changeUserData).catch(() => {});
     } catch (e) {
       // 
     }
 
-    (async () => {
-      try {
-        const resp = await fetch(`${API_URL}web-notifications?username=${encodeURIComponent(currentUser.username)}`)
-        if (!resp.ok) return
-        const body = await resp.json()
-        const items = Array.isArray(body?.data) ? body.data : []
-
-        const lastLoginDate = currentUser?.lastLogin ? new Date(currentUser.lastLogin) : new Date(0)
-
-        let showed = false
-        for (const it of items) {
-          const created = it?.created_at ? new Date(it.created_at) : null
-          if (!created) continue
-          if (created > lastLoginDate) {
-            try {
-              toast('New Notification', {
-                duration: 7000,
-                position: 'top-right',
-                description: it.notification || 'Unable to load notification content.',
-                icon: <div className="w-8 h-8 bg-primary flex items-center justify-center rounded-lg">
-                  <Megaphone className='w-5 h-5 text-primary-foreground' />
-                </div>,
-                closeButton: true,
-              })
-              showed = true
-            } catch (e) {
-              console.log(e);
-            }
-          }
-        }
-        useStore.getState().changeUserData('lastLogin', new Date().toISOString())
-      } catch (e) {
-        console.log(e);
-      }
-    })()
+    // show web notifications (use exported helper)
+    showWebNotificationsForUser(currentUser)
 
   }, []);
 
