@@ -82,7 +82,7 @@ export default function Login() {
         setCurrentUserIndex(newIndex);
 
         const newUser = useStore.getState().users[newIndex];
-        try { showWebNotificationsForUser(newUser) } catch (e) {  }
+        try { showWebNotificationsForUser(newUser, true) } catch (e) {  }
 
         navigate('/dashboard');
       } else {
