@@ -11,12 +11,6 @@ export const districts = [
         logintype: 'credentials'
     },
     {
-        name: 'Conroe ISD',
-        platform: 'hac',
-        link: 'https://launchpad.classlink.com/conroeisd',
-        logintype: 'classlink'
-    },
-    {
         name: 'KatyISD',
         platform: 'hac',
         link: 'https://homeaccess.katyisd.org/',

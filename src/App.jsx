@@ -56,14 +56,13 @@ export async function showWebNotificationsForUser(currentUser, loggingIn = false
       }
     }
 
-    // update lastLogin so we don't re-show the same notifications
     try {
       useStore.getState().changeUserData('lastLogin', new Date().toISOString())
     } catch (e) {
-      // ignore
+      console.error(e);
     }
   } catch (e) {
-    // ignore notification errors
+    console.error(e);
   }
 }
 
@@ -94,7 +93,6 @@ export default function App() {
       // 
     }
 
-    // show web notifications (use exported helper)
     showWebNotificationsForUser(currentUser)
 
   }, []);
@@ -120,7 +118,7 @@ export default function App() {
           <Route path="*" element={<div className="p-6">Not Found</div>} />
         </Routes>
       </BrowserRouter>
-      <Toaster />
+      <Toaster theme={currentUser?.theme || "light"} />
     </ThemeProvider>
   );
 }
