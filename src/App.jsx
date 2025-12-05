@@ -25,7 +25,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { API_URL } from '@/lib/constants';
 import { Megaphone } from 'lucide-react';
 
-export async function showWebNotificationsForUser(currentUser) {
+export async function showWebNotificationsForUser(currentUser, loggingIn = false) {
   if (!currentUser) return
 
   try {
@@ -39,7 +39,7 @@ export async function showWebNotificationsForUser(currentUser) {
     for (const it of items) {
       const created = it?.created_at ? new Date(it.created_at) : null
       if (!created) continue
-      if (it.show_on_login && (lastLoginDate == null || created > lastLoginDate)) {
+      if ((lastLoginDate == null || created > lastLoginDate) && (loggingIn ? it.show_on_login : true)) {
         try {
           toast(it.title || "New Notification", {
             duration: 7000,
