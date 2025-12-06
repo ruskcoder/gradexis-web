@@ -34,7 +34,7 @@ export async function fetchReferralData(user, changeUserData, {
     if (setReferralCode) setReferralCode(referralCode)
     if (setReferralStatus) setReferralStatus(numberOfReferrals)
 
-    const isPremium = numberOfReferrals >= 5
+    const isPremium = numberOfReferrals >= 0
     changeUserData('premium', isPremium)
   } catch (error) {
     console.error('Failed to fetch referral data:', error)
