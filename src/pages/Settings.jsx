@@ -87,7 +87,7 @@ export default function Settings() {
             {referralStatus !== null && (
               <div className="flex flex-col">
                 <Label className="text-sm">Referral Status</Label>
-                <p className="text-4xl font-bold mt-2">{referralStatus}/5</p>
+                <p className="text-4xl font-bold mt-2">{referralStatus}</p>
               </div>
             )}
 
@@ -96,19 +96,19 @@ export default function Settings() {
             </Button>
           </div>
 
-          {user.premium && (
+          {/* {user.premium && (
             <div className="mt-4 p-3 bg-green-200 dark:bg-green-900 rounded-md w-fit">
               <p className="text-green-900 dark:text-green-100 font-semibold">Premium Unlocked</p>
             </div>
-          )}
+          )} */}
         </section>
 
         <section>
           <h2 className="text-lg font-semibold">Appearance</h2>
           <p className="text-sm text-muted-foreground mt-1">Theme and visual preferences.</p>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col">
+          <div className="mt-4 flex gap-4 w-[40%]">
+            <div className="flex-1">
               <Label>Theme</Label>
               <div className="mt-2">
                 <Select
@@ -132,7 +132,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className='flex'>
+            <div className='flex-1'>
               <div className="flex flex-col">
                 <Label>Grades view</Label>
                 <div className="mt-2 flex items-start gap-4">
@@ -155,7 +155,7 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
-              <div className="absolute translate-x-50 h-24 w-36 flex items-center justify-center">
+              <div className="absolute translate-x-50 -translate-y-[75%] h-24 w-36 flex items-center justify-center">
                 <GradesItem
                   courseName="Preview Course"
                   id="MATH101"

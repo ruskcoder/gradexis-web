@@ -34,6 +34,7 @@ export default function FinalExamCalculator() {
   const [termGrades, setTermGrades] = React.useState({})
   const [fetchProgress, setFetchProgress] = React.useState({})
   const [initialClassesData, setInitialClassesData] = React.useState({})
+  const [cachedTermData, setCachedTermData] = React.useState({})
 
   const [finalExamWeight, setFinalExamWeight] = React.useState('15')
   const [termAverages, setTermAverages] = React.useState({})
@@ -83,6 +84,12 @@ export default function FinalExamCalculator() {
             setClasses(chunk.classes)
 
             setInitialClassesData((prev) => ({ ...prev, [chunk.term]: chunk.classes }))
+            
+            // Cache the initial term's data
+            setCachedTermData((prev) => ({
+              ...prev,
+              [chunk.term]: chunk.classes,
+            }))
 
             let firstClass = chunk.classes[0]?.course
             if (chunk.classes.length > 0 && !selectedClass) {
@@ -139,6 +146,12 @@ export default function FinalExamCalculator() {
             setInitialClassesData((prev) => ({ ...prev, [term]: chunk.classes }))
 
             const selectedClassData = chunk.classes.find(cls => cls.course === selectedClass)
+
+            // Cache the entire term's data for future use
+            setCachedTermData((prev) => ({
+              ...prev,
+              [term]: chunk.classes,
+            }))
 
             if (selectedClassData && selectedClassData.average !== undefined && selectedClassData.average !== '') {
               const classAverage = parseFloat(selectedClassData.average)
@@ -333,7 +346,21 @@ export default function FinalExamCalculator() {
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
             <div className="space-y-2">
               <Label>Select Class</Label>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
+              <Select value={selectedClass} onValueChange={(classValue) => {
+                setSelectedClass(classValue)
+                
+                // Load cached data for all selected terms
+                selectedTerms.forEach((term) => {
+                  if (cachedTermData[term]) {
+                    const selectedClassData = cachedTermData[term].find(cls => cls.course === classValue)
+                    if (selectedClassData && selectedClassData.average !== undefined && selectedClassData.average !== '') {
+                      const classAverage = parseFloat(selectedClassData.average)
+                      setTermAverages((prev) => ({ ...prev, [term]: classAverage.toFixed(2) }))
+                      setCalculatorTermAverages((prev) => ({ ...prev, [term]: classAverage.toFixed(2) }))
+                    }
+                  }
+                })
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a class" />
                 </SelectTrigger>

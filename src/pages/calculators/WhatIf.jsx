@@ -113,17 +113,19 @@ export const WhatIf = ({ selectedGrade }) => {
     const requiredTargetCatPercent = (targetAvgVal * totalWeight - otherContribution) / targetCatWeight
 
     // Now calculate what score is needed in the new assignment to achieve this percent
-    // The assignment will be worth 100 * targetWeight points
-    // The target category will have: (currentPoints + newScore) / (currentMaxPoints + 100 * targetWeight)
+    // The new assignment has weight targetWeight, contributing: studentScore * targetWeight / (maxScore * targetWeight)
+    // With weighted calculation: (currentWeightedPoints + newScore * targetWeight) / (currentWeightedMaxPoints + 100 * targetWeight)
     const currentMaxPoints = categoryStates[targetCategory].maxPoints
     const currentStudentPoints = categoryStates[targetCategory].studentPoints
     
-    // The new assignment has weight targetWeight, so it's worth 100 * targetWeight points
-    // requiredPercent = (currentStudentPoints + newScore) / (currentMaxPoints + 100 * targetWeight)
-    // newScore = requiredPercent * (currentMaxPoints + 100 * targetWeight) - currentStudentPoints
+    // The new assignment has weight targetWeight
+    // newCategoryPercent = (currentStudentPoints + newScore * targetWeight) / (currentMaxPoints + 100 * targetWeight)
+    // Solving for newScore:
+    // requiredPercent * (currentMaxPoints + 100 * targetWeight) = currentStudentPoints + newScore * targetWeight
+    // newScore = (requiredPercent * (currentMaxPoints + 100 * targetWeight) - currentStudentPoints) / targetWeight
     const targetWtVal = parseFloat(targetWeight) || 1
-    const newAssignmentTotalPoints = 100 * targetWtVal
-    const newAssignmentScore = (requiredTargetCatPercent / 100) * (currentMaxPoints + newAssignmentTotalPoints) - currentStudentPoints
+    const newAssignmentTotalPoints = 100
+    const newAssignmentScore = ((requiredTargetCatPercent / 100) * (currentMaxPoints + newAssignmentTotalPoints * targetWtVal) - currentStudentPoints) / targetWtVal
     const newAssignmentPercentage = (newAssignmentScore / newAssignmentTotalPoints) * 100
 
     setTargetRequired(newAssignmentPercentage)
@@ -166,29 +168,36 @@ export const WhatIf = ({ selectedGrade }) => {
   const recalculateGrades = (categories, scores) => {
     const updatedCategories = { ...categories }
     
-    // Calculate each category's percentage based on points
+    // Calculate each category's percentage based on points, weighted by assignment weight
     Object.keys(updatedCategories).forEach((categoryName) => {
       const categoryScores = scores.filter(s => {
         if (s.category !== categoryName) return false
         const scoreVal = parseFloat(s.score)
-        return !isNaN(scoreVal) && s.score !== '···' && s.score !== '' && !s.excluded
+        const isDropped = s.badges && s.badges.includes('dropped')
+        return !isNaN(scoreVal) && s.score !== '···' && s.score !== '' && !s.excluded && !isDropped
       })
       
-      let totalStudentPoints = 0
-      let totalMaxPoints = 0
+      let totalWeightedStudentPoints = 0
+      let totalWeightedMaxPoints = 0
       
       if (categoryScores.length > 0) {
-        totalStudentPoints = categoryScores.reduce((sum, s) => sum + (parseFloat(s.score) || 0), 0)
-        totalMaxPoints = categoryScores.reduce((sum, s) => sum + (parseFloat(s.totalPoints) || 0), 0)
+        categoryScores.forEach(s => {
+          const weight = parseFloat(s.weight) || 1
+          const studentPoints = parseFloat(s.score) || 0
+          const maxPoints = parseFloat(s.totalPoints) || 0
+          
+          totalWeightedStudentPoints += studentPoints * weight
+          totalWeightedMaxPoints += maxPoints * weight
+        })
       }
 
-      const percentValue = totalMaxPoints > 0 ? (totalStudentPoints / totalMaxPoints) * 100 : 0
+      const percentValue = totalWeightedMaxPoints > 0 ? (totalWeightedStudentPoints / totalWeightedMaxPoints) * 100 : 0
 
       updatedCategories[categoryName] = {
         ...updatedCategories[categoryName],
         percent: percentValue.toFixed(3),
-        studentsPoints: totalStudentPoints.toFixed(4),
-        maximumPoints: totalMaxPoints.toFixed(2),
+        studentsPoints: totalWeightedStudentPoints.toFixed(4),
+        maximumPoints: totalWeightedMaxPoints.toFixed(2),
       }
     })
 
@@ -305,7 +314,7 @@ export const WhatIf = ({ selectedGrade }) => {
 
     const assignmentName = `Upcoming ${targetCategory}`
     const targetWtVal = parseFloat(targetWeight) || 1
-    const totalPointsValue = 100 * targetWtVal
+    const totalPointsValue = 100
     const scoreValue = (targetRequired / 100) * totalPointsValue
 
     const newScore = {
