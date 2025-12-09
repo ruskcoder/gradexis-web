@@ -7,7 +7,7 @@ export const districts = [
     {
         name: 'Cypress-Fairbanks ISD',
         platform: 'hac',
-        link: 'https://homeaccess.cfisd.net/',
+        link: 'https://home-access.cfisd.net/',
         logintype: 'credentials'
     },
     {
