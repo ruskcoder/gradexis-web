@@ -14,8 +14,9 @@ export default function Dashboard() {
         <p className="mt-1">{formattedDate}</p>
       </div>}
       <div className="bg-card rounded-lg shadow p-6 border">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-        <p className="text-muted-foreground">No recent activity to display.</p>
+        <h2 className="text-2xl font-semibold mb-4">Feature Request</h2>
+        <p className="text-muted-foreground">Feature requests are available to make at: </p>
+        <a href="https://forms.gle/GmXtne4w9yGxVcDH8">https://forms.gle/GmXtne4w9yGxVcDH8</a>
       </div>
     </div>
   );
