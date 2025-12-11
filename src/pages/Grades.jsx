@@ -24,7 +24,7 @@ import { useLocation } from 'react-router-dom'
 export default function Grades() {
   const [terms, setTerms] = useState([]);
   const [currentTerm, setCurrentTerm] = useState('');
-  const [progress, setProgress] = useState({ percent: 0, message: 'Initializing Connection' });
+  const [progressByTerm, setProgressByTerm] = useState({});
   const [classesDataByTerm, setClassesDataByTerm] = useState({});
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [loadingTerms, setLoadingTerms] = useState({});
@@ -37,13 +37,12 @@ export default function Grades() {
   async function fetchClasses(term = null, { initial = false } = {}) {
     const key = initial ? 'initial' : term;
     setLoadingTerms(prev => ({ ...prev, [key]: true }));
-    setProgress({ percent: 0, message: 'Initializing Connection' });
-
+    setProgressByTerm(prev => ({ ...prev, [key]: { percent: initial ? 0 : 4, message: 'Initializing Connection' } }));
     try {
       const generator = getClasses(term);
       for await (const chunk of generator) {
         if (chunk.percent !== undefined) {
-          setProgress({ percent: chunk.percent, message: chunk.message });
+          setProgressByTerm(prev => ({ ...prev, [key]: { percent: chunk.percent, message: chunk.message } }));
         } else if (chunk.success === true) {
           if (initial) {
             setTerms(chunk.termList);
@@ -79,7 +78,7 @@ export default function Grades() {
   const handleTabChange = (term) => {
     setCurrentTerm(term);
     setSelectedGrade(null);
-    if (classesDataByTerm[term]) return;
+    if (classesDataByTerm[term] || loadingTerms[term]) return;
     fetchClasses(term);
   };
   const showTitle = user ? user.showPageTitles !== false : true;
@@ -116,8 +115,8 @@ export default function Grades() {
               </TabsList>}
               <div className="flex-1 overflow-y-auto">
                 {(loadingTerms[currentTerm] || loadingTerms.initial) && <div>
-                  <div className='w-full text-center my-2'>{progress.message}</div>
-                  <Progress value={progress.percent} />
+                  <div className='w-full text-center my-2'>{progressByTerm[currentTerm]?.message || progressByTerm.initial?.message}</div>
+                  <Progress value={progressByTerm[currentTerm]?.percent || progressByTerm.initial?.percent || 0} />
                 </div>}
                 {!loadingTerms[currentTerm] && !loadingTerms.initial && classesDataByTerm[currentTerm] && (
                   <TabsContent value={currentTerm} className="mt-2">
