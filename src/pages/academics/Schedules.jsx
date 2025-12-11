@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -37,14 +37,14 @@ export default function Schedules() {
   const { users, currentUserIndex, changeUserData } = useStore();
   const currentUser = users[currentUserIndex];
 
-  const [loading, setLoading] = React.useState(true);
-  const [schedule, setSchedule] = React.useState([]);
-  const [selectedBellSchedule, setSelectedBellSchedule] = React.useState(null);
-  const [editingSchedule, setEditingSchedule] = React.useState(null);
-  const [editingPeriods, setEditingPeriods] = React.useState([]);
-  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [scheduleToDelete, setScheduleToDelete] = React.useState(null);
-  const [scheduleName, setScheduleName] = React.useState('');
+  const [loading, setLoading] = useState(true);
+  const [schedule, setSchedule] = useState([]);
+  const [selectedBellSchedule, setSelectedBellSchedule] = useState(null);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [editingPeriods, setEditingPeriods] = useState([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState(null);
+  const [scheduleName, setScheduleName] = useState('');
 
   const bellSchedules = currentUser?.bellSchedules || [];
 
@@ -54,14 +54,9 @@ export default function Schedules() {
     }
   };
 
-  const fetchSchedule = React.useCallback(async () => {
+  const fetchSchedule = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getSchedule();
-
-      if (data.success && data.schedule) {
-        setSchedule(data.schedule);
-      }
 
       if (currentUser && bellSchedules.length === 0) {
         setBellSchedules([
@@ -151,6 +146,12 @@ export default function Schedules() {
         ]
         );
       }
+
+      const data = await getSchedule(); 
+      if (data.success && data.schedule) {
+        setSchedule(data.schedule);
+      }
+
     } catch (error) {
       console.error('Failed to fetch schedule:', error);
     } finally {
@@ -158,7 +159,7 @@ export default function Schedules() {
     }
   }, [currentUser, bellSchedules.length]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchSchedule();
   }, []);
 

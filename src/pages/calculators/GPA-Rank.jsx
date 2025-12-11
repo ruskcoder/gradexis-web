@@ -475,6 +475,10 @@ export default function GPARankCalculator() {
 
   const allCoursesHaveTypes = () => {
     const nonDeletedCourses = displayCourses.filter(c => !c.isDeleted)
+    if (gpaType === 'unweighted') {
+      return nonDeletedCourses.length > 0
+    }
+
     return nonDeletedCourses.length > 0 && nonDeletedCourses.every(c => c.type && c.type !== '')
   }
 

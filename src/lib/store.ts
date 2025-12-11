@@ -79,6 +79,7 @@ interface UserStore {
   users: User[];
   currentUserIndex: number;
   session: Session;
+  cache: Record<string, any>;
 
   currentUser: () => User | null;
 
@@ -88,6 +89,9 @@ interface UserStore {
   removeUser: (index: number) => void;
   changeUserData: (key: keyof User, value: any) => void;
   setSession: (session: Partial<Session>) => void;
+  getCacheValue: (key: string) => any;
+  setCacheValue: (key: string, value: any) => void;
+  clearCache: () => void;
 }
 
 export const useStore = create<UserStore>()(
@@ -96,6 +100,7 @@ export const useStore = create<UserStore>()(
       users: [],
       currentUserIndex: -1,
       session: {},
+      cache: {},
 
       currentUser: (): User | null => {
         const { users, currentUserIndex } = get();
@@ -152,6 +157,20 @@ export const useStore = create<UserStore>()(
         set((state) => ({
           session: { ...state.session, ...session },
         }));
+      },
+
+      getCacheValue: (key: string) => {
+        return get().cache[key];
+      },
+
+      setCacheValue: (key: string, value: any) => {
+        set((state) => ({
+          cache: { ...state.cache, [key]: value },
+        }));
+      },
+
+      clearCache: () => {
+        set({ cache: {} });
       },
     }),
     {

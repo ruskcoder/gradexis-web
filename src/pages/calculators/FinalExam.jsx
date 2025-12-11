@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useCurrentUser } from '@/lib/store'
 import { getClasses } from '@/lib/grades-api'
 import { Spinner } from '@/components/ui/spinner'
@@ -49,13 +49,13 @@ export default function FinalExamCalculator() {
   const user = useCurrentUser()
   const showTitle = user ? user.showPageTitles !== false : true
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (user && !user.premium) {
       setShowPremiumDialog(true)
     }
   }, [user])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedClass && initialClassesData[currentTerm]) {
       const selectedClassData = initialClassesData[currentTerm].find(cls => cls.course === selectedClass)
       if (selectedClassData && selectedClassData.average !== undefined && selectedClassData.average !== '') {
@@ -70,7 +70,7 @@ export default function FinalExamCalculator() {
     }
   }, [selectedClass, currentTerm, initialClassesData])
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchInitial = async () => {
       try {
         setLoadingInitial(true)
