@@ -1,7 +1,9 @@
 import React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCurrentUser, useStore } from '@/lib/store'
 import { API_URL } from '@/lib/constants'
+import { getColorThemes } from '@/lib/color-themes'
+import { applyColorTheme } from '@/lib/apply-color-theme'
 import {
   Select,
   SelectTrigger,
@@ -17,6 +19,21 @@ import { Button } from '@/components/ui/button'
 import { useTheme } from '@/components/theme-provider'
 import { GradesItem } from '@/components/custom/grades-item'
 
+const ColorIcons = ({ colors, darkColors, isDark }) => {
+  const displayColors = isDark && darkColors ? darkColors : colors
+  return (
+    <div className='flex gap-1'>
+      {displayColors.map((color, index) => (
+        <div
+          key={index}
+          className={`border h-4 w-4 rounded-md m-0 p-0`}
+          style={{ backgroundColor: color }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export async function fetchReferralData(user, changeUserData, {
   setReferralCode,
   setReferralStatus,
@@ -29,12 +46,11 @@ export async function fetchReferralData(user, changeUserData, {
     const data = await response.json()
 
     const referralCode = data.referralCode || 'N/A'
-    const numberOfReferrals = data.numberOfReferrals ?? 0
-
+    const numReferrals = data.numReferrals ?? 0
     if (setReferralCode) setReferralCode(referralCode)
-    if (setReferralStatus) setReferralStatus(numberOfReferrals)
+    if (setReferralStatus) setReferralStatus(numReferrals)
 
-    const isPremium = numberOfReferrals >= 0
+    const isPremium = numReferrals >= 0
     changeUserData('premium', isPremium)
   } catch (error) {
     console.error('Failed to fetch referral data:', error)
@@ -50,11 +66,43 @@ export default function Settings() {
   const [referralStatus, setReferralStatus] = useState(null)
   const [referralCode, setReferralCode] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [colorThemes, setColorThemes] = useState([])
+  const [themesLoading, setThemesLoading] = useState(true)
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (user?.username) {
       fetchReferralData(user, changeUserData, { setReferralCode, setReferralStatus, setLoading })
     }
+  }, [])
+
+  useEffect(() => {
+    const loadThemes = async () => {
+      try {
+        const themes = await getColorThemes()
+        setColorThemes(themes)
+      } catch (error) {
+        console.error('Failed to load color themes:', error)
+      } finally {
+        setThemesLoading(false)
+      }
+    }
+    
+    loadThemes()
+
+    // Detect dark mode
+    const isDark = document.documentElement.classList.contains('dark')
+    setIsDarkMode(isDark)
+
+    // Listen for dark mode changes
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark')
+      setIsDarkMode(isDark)
+    })
+    
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => observer.disconnect()
   }, [])
 
   if (!user) {
@@ -95,20 +143,60 @@ export default function Settings() {
               {loading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>
-
-          {/* {user.premium && (
-            <div className="mt-4 p-3 bg-green-200 dark:bg-green-900 rounded-md w-fit">
-              <p className="text-green-900 dark:text-green-100 font-semibold">Premium Unlocked</p>
-            </div>
-          )} */}
         </section>
 
         <section>
           <h2 className="text-lg font-semibold">Appearance</h2>
-          <p className="text-sm text-muted-foreground mt-1">Theme and visual preferences.</p>
-
-          <div className="mt-4 flex gap-4 w-[40%]">
-            <div className="flex-1">
+          <p className="text-sm text-muted-foreground mt-1 mb-4">Theme and visual preferences.</p>
+          
+          <Label>Color Theme</Label>
+          <p className='text-xs text-muted-foreground mt-1'>Disclaimer: Some color themes may not be optimized for looks.</p>
+          <div className="mt-2 mb-4">
+            <Select
+              value={user.colorTheme}
+              onValueChange={(val) => {
+                changeUserData('colorTheme', val)
+                applyColorTheme(val).catch(() => {})
+              }}
+              className="w-full"
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select theme" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Color Theme</SelectLabel>
+                  {themesLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Loading themes...
+                    </SelectItem>
+                  ) : (
+                    colorThemes.map((theme) => (
+                      <SelectItem key={theme.filename} value={theme.filename}>
+                        <div className="flex items-center gap-2">
+                          {theme.colors && theme.colors.length > 0 && (
+                            <ColorIcons colors={theme.colors} darkColors={theme.darkColors} isDark={isDarkMode} />
+                          )}
+                          <span>{theme.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-4 flex items-center gap-2">
+            <Checkbox
+              id="match-theme-logo"
+              checked={!!user.matchThemeWithLogo}
+              onCheckedChange={(checked) => changeUserData('matchThemeWithLogo', !!checked)}
+              disabled={user.colorTheme == 'default'}
+            />
+            <Label htmlFor="match-theme-logo" className="cursor-pointer">Match logo with theme</Label>
+          </div>
+          <div className="mt-8 flex gap-14">
+            <div className="">
               <Label>Theme</Label>
               <div className="mt-2">
                 <Select
@@ -132,11 +220,11 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className='flex-1'>
+            <div className="">
               <div className="flex flex-col">
                 <Label>Grades view</Label>
                 <div className="mt-2 flex items-start gap-4">
-                  <div className="w-48">
+                  <div className="w-full">
                     <Select
                       value={user.gradesView}
                       onValueChange={(val) => changeUserData('gradesView', val)}

@@ -24,6 +24,7 @@ import { toast } from "sonner"
 import { Toaster } from '@/components/ui/sonner';
 import { API_URL } from '@/lib/constants';
 import { Megaphone } from 'lucide-react';
+import { applyColorTheme } from '@/lib/apply-color-theme';
 
 export async function showWebNotificationsForUser(currentUser, loggingIn = false) {
   if (!currentUser) return
@@ -83,19 +84,40 @@ export default function App() {
   const users = useStore((state) => state.users);
   const currentUser = useCurrentUser();
   const notLogged = currentUserIndex === -1 || users.length === 0;
+  const [isDarkMode, setIsDarkMode] = React.useState(false)
 
   useEffect(() => {
     if (!currentUser) return;
 
     try {
       fetchReferralData(currentUser, useStore.getState().changeUserData).catch(() => {});
+      showWebNotificationsForUser(currentUser);
     } catch (e) {
       // 
     }
 
-    showWebNotificationsForUser(currentUser)
+  }, [currentUser?.username]);
 
-  }, []);
+  useEffect(() => {
+    if (!currentUser?.colorTheme) return;
+
+    applyColorTheme(currentUser.colorTheme).catch(() => {});
+
+  }, [currentUser?.colorTheme, isDarkMode]);
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark')
+    setIsDarkMode(isDark)
+
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark')
+      setIsDarkMode(isDark)
+    })
+    
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="gradexis-theme">

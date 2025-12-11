@@ -25,10 +25,12 @@ export interface User {
   avatar: string;
   district: string;
   school: string;
+  colorTheme: string;
   theme: 'light' | 'dark';
   color: string;
   gradesView: 'card' | 'list';
   showPageTitles?: boolean;
+  matchThemeWithLogo?: boolean;
   bellSchedules: BellSchedule[];
   premium: boolean;
   lastLogin: Date | null;
@@ -49,10 +51,12 @@ const DEFAULT_USER: User = {
   avatar: '',
   district: '',
   school: '',
+  colorTheme: 'default',
   theme: 'light',
   color: 'blue',
   gradesView: 'list',
   showPageTitles: true,
+  matchThemeWithLogo: false,
   bellSchedules: [],
   premium: false,
   lastLogin: null,

@@ -75,9 +75,9 @@ export default function Login() {
           link: data.link || link,
           name: data.name || '',
           avatar: avatar || '',
+          premium: data.numReferrals >= 0,
         });
 
-        const users = useStore.getState().users;
         const newIndex = Math.max(0, useStore.getState().users.length - 1);
         setCurrentUserIndex(newIndex);
 
@@ -121,7 +121,9 @@ export default function Login() {
 
   useEffect(() => {
     changePage(0);
-    document.documentElement.classList.remove('dark');
+    setTimeout(() => {
+      document.documentElement.classList.remove('dark');  
+    }, 0);
   }, []); 
 
   const filteredDistricts = districts.filter((d) => {
