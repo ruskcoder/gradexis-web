@@ -25,7 +25,7 @@ export interface Shortcut {
   id: string;
   title: string;
   url: string;
-  image: string; // base64 or URL
+  image: string;
 }
 
 export interface User {

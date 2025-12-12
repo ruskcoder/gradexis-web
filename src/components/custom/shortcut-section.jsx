@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCurrentUser, useStore } from '@/lib/store'
 import {
   DropdownMenu,
@@ -54,8 +54,8 @@ function ShortcutCard({ shortcut, onEdit, onDelete }) {
             <DropdownMenuItem onClick={(e) => {
               e.stopPropagation()
               onDelete(shortcut.id)
-            }} className="text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
+            }} className="delete text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" color="var(--destructive)"/> 
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -71,14 +71,23 @@ export function ShortcutSection() {
   const [editingShortcut, setEditingShortcut] = useState(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const defaultShortcuts = user?.district === 'Katy ISD' 
-    ? [CANVAS_SHORTCUT, ...DEFAULT_SHORTCUTS_BASE]
-    : DEFAULT_SHORTCUTS_BASE
+  useEffect(() => {
+    if (user && user.shortcuts && user.shortcuts.length === 0) {
+      const defaultShortcuts = user.district === 'Katy ISD' 
+        ? [CANVAS_SHORTCUT, ...DEFAULT_SHORTCUTS_BASE]
+        : DEFAULT_SHORTCUTS_BASE
+      
+      defaultShortcuts.forEach(shortcut => {
+        addShortcut({
+          title: shortcut.title,
+          url: shortcut.url,
+          image: shortcut.image
+        })
+      })
+    }
+  }, [user?.id])
 
-  const shortcuts = [
-    ...defaultShortcuts,
-    ...(user?.shortcuts || [])
-  ]
+  const shortcuts = user?.shortcuts || []
 
   const handleEditShortcut = (shortcut) => {
     setEditingShortcut(shortcut)
@@ -86,9 +95,7 @@ export function ShortcutSection() {
   }
 
   const handleDeleteShortcut = (id) => {
-    if (confirm('Are you sure you want to delete this shortcut?')) {
-      removeShortcut(id)
-    }
+    removeShortcut(id)
   }
 
   const handleSaveShortcut = (data) => {

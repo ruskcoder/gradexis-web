@@ -5,3 +5,7 @@
 .shortcut-link:hover+.shortcut-menu, .shortcut-menu:hover {
     opacity: 1;
 } */
+
+.delete {
+    color: var(--destructive);
+}

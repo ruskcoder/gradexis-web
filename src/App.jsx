@@ -35,13 +35,12 @@ export async function showWebNotificationsForUser(currentUser, loggingIn = false
     if (!resp.ok) return
     const body = await resp.json()
     const items = Array.isArray(body?.data) ? body.data : []
-
     const lastLoginDate = currentUser?.lastLogin ? new Date(currentUser.lastLogin) : null
 
     for (const it of items) {
       const created = it?.created_at ? new Date(it.created_at) : null
       if (!created) continue
-      if ((lastLoginDate == null || created > lastLoginDate) && (loggingIn ? it.show_on_login : true)) {
+      if ((lastLoginDate == null || created > lastLoginDate) && (loggingIn === !!it.show_on_login)) {
         try {
           toast(it.title || "New Notification", {
             duration: 7000,
@@ -97,7 +96,7 @@ export default function App() {
       // 
     }
 
-  }, [currentUser?.username]);
+  }, []);
 
   useEffect(() => {
     if (!currentUser?.colorTheme) return;
