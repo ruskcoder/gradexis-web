@@ -151,7 +151,7 @@ export default function Grades() {
             </div>
             <div className='p-6 flex-1 overflow-y-auto'>
               {!selectedGrade ? (
-                <p className="text-muted-foreground text-center mt-4">
+                <p className="text-muted-foreground text-center h-full flex items-center justify-center max-h-[46px]">
                   Select a grade to continue.
                 </p>
               ) : !whatIfMode ? (

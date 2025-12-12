@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { PLATFORMS } from './constants';
+import { PLATFORMS, CLASSES_ENDPOINT } from './constants';
 
 type Platform = typeof PLATFORMS[number];
 
@@ -12,6 +12,20 @@ export interface BellSchedule {
     endTime: string;
     name?: string;
   }>;
+}
+
+export interface TodoItem {
+  id: string;
+  title: string;
+  dueDate: Date | null;
+  completed: boolean;
+}
+
+export interface Shortcut {
+  id: string;
+  title: string;
+  url: string;
+  image: string; // base64 or URL
 }
 
 export interface User {
@@ -38,6 +52,8 @@ export interface User {
   deletedTranscriptCourses: string[];
   customCourses: Array<{ courseName: string; grade: string; type: string }>;
   rankDataPoints: Array<{ gpa: number | null; rank: number | null }>;
+  todos: TodoItem[];
+  shortcuts: Shortcut[];
 }
 
 const DEFAULT_USER: User = {
@@ -67,6 +83,8 @@ const DEFAULT_USER: User = {
     { gpa: null, rank: null },
     { gpa: null, rank: null }
   ],
+  todos: [],
+  shortcuts: [],
 };
 
 interface Session {
@@ -80,6 +98,7 @@ interface UserStore {
   currentUserIndex: number;
   session: Session;
   cache: Record<string, any>;
+  cacheTimestamp?: number | null;
 
   currentUser: () => User | null;
 
@@ -92,6 +111,13 @@ interface UserStore {
   getCacheValue: (key: string) => any;
   setCacheValue: (key: string, value: any) => void;
   clearCache: () => void;
+  addTodo: (todo: Omit<TodoItem, 'id'>) => void;
+  updateTodo: (id: string, updates: Partial<TodoItem>) => void;
+  removeTodo: (id: string) => void;
+  toggleTodoComplete: (id: string) => void;
+  addShortcut: (shortcut: Omit<Shortcut, 'id'>) => void;
+  updateShortcut: (id: string, updates: Partial<Shortcut>) => void;
+  removeShortcut: (id: string) => void;
 }
 
 export const useStore = create<UserStore>()(
@@ -101,6 +127,7 @@ export const useStore = create<UserStore>()(
       currentUserIndex: -1,
       session: {},
       cache: {},
+      cacheTimestamp: null,
 
       currentUser: (): User | null => {
         const { users, currentUserIndex } = get();
@@ -166,11 +193,118 @@ export const useStore = create<UserStore>()(
       setCacheValue: (key: string, value: any) => {
         set((state) => ({
           cache: { ...state.cache, [key]: value },
+          cacheTimestamp: Date.now(),
         }));
       },
 
       clearCache: () => {
-        set({ cache: {} });
+        set({ cache: {}, cacheTimestamp: null });
+      },
+
+      addTodo: (todo: Omit<TodoItem, 'id'>) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const id = Math.random().toString(36).substr(2, 9);
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              todos: [...(currentUser.todos || []), { ...todo, id }],
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      updateTodo: (id: string, updates: Partial<TodoItem>) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              todos: (currentUser.todos || []).map((todo) =>
+                todo.id === id ? { ...todo, ...updates } : todo
+              ),
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      removeTodo: (id: string) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              todos: (currentUser.todos || []).filter((todo) => todo.id !== id),
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      toggleTodoComplete: (id: string) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              todos: (currentUser.todos || []).map((todo) =>
+                todo.id === id ? { ...todo, completed: !todo.completed } : todo
+              ),
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      addShortcut: (shortcut: Omit<Shortcut, 'id'>) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const id = Math.random().toString(36).substr(2, 9);
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              shortcuts: [...(currentUser.shortcuts || []), { ...shortcut, id }],
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      updateShortcut: (id: string, updates: Partial<Shortcut>) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              shortcuts: (currentUser.shortcuts || []).map((shortcut) =>
+                shortcut.id === id ? { ...shortcut, ...updates } : shortcut
+              ),
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      removeShortcut: (id: string) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              shortcuts: (currentUser.shortcuts || []).filter((shortcut) => shortcut.id !== id),
+            } as User;
+          }
+          return { users: newUsers };
+        });
       },
     }),
     {
@@ -178,6 +312,8 @@ export const useStore = create<UserStore>()(
       partialize: (state) => ({
         users: state.users,
         currentUserIndex: state.currentUserIndex,
+        cache: state.cache,
+        cacheTimestamp: state.cacheTimestamp,
       }),
       onRehydrateStorage: () => (persistedState) => {
         try {
@@ -208,6 +344,30 @@ export const useStore = create<UserStore>()(
 
           ;(persistedState as any).users = mergedUsers
           ;(persistedState as any).currentUserIndex = idx
+
+          const ts: any = (persistedState as any).cacheTimestamp
+          if (ts && typeof ts === 'number') {
+            const now = Date.now()
+            const age = now - ts
+            const FIVE_MIN = 5 * 60 * 1000
+            if (age > FIVE_MIN) {
+              ;(persistedState as any).cache = {}
+              ;(persistedState as any).cacheTimestamp = null
+            }
+          }
+
+          try {
+            const cacheObj = (persistedState as any).cache
+            if (cacheObj && typeof cacheObj === 'object') {
+              for (const key of Object.keys(cacheObj)) {
+                if (key.startsWith(CLASSES_ENDPOINT + ':')) {
+                  delete cacheObj[key]
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Error pruning classes cache on rehydrate', e)
+          }
         } catch (e) {
           console.error(e)
         }

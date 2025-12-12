@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
+import './assets/css/main.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import MainLayout from '@/components/layout/MainLayout';
 import Login from './pages/Login';
