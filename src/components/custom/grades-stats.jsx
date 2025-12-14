@@ -27,7 +27,7 @@ export const categoryColor = (category) => {
   }
 }
 
-export function RingGradeStat({ grade }) {
+export function RingGradeStat({ grade, whatif = false, whatifGrade = null }) {
   grade = parseFloat(grade).toPrecision(4)
   return (
     <Item className="block w-fit" variant="outline">
@@ -36,7 +36,8 @@ export function RingGradeStat({ grade }) {
           className="w-40 h-40"
           value={grade}
           text={grade}
-          label="Overall"
+          label={whatif ? "From": "Overall"}
+          label2={ whatif ? `${whatifGrade}` : null }
           key="ring"
         />
       </ItemContent>

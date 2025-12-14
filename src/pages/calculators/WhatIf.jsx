@@ -39,6 +39,7 @@ export const WhatIf = ({ selectedGrade }) => {
   const [isAdding, setIsAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [newWeight, setNewWeight] = useState('')
+  const [originalAverage, setOriginalAverage] = useState(null)
   
   const [manualName, setManualName] = useState('')
   const [manualPercentage, setManualPercentage] = useState('')
@@ -55,8 +56,12 @@ export const WhatIf = ({ selectedGrade }) => {
     if (gradeData.categories && gradeData.scores) {
       const { categories: updatedCategories, average } = recalculateGrades(gradeData.categories, gradeData.scores || [])
       setCurrent({ ...gradeData, categories: updatedCategories, average })
+      const providedAvg = typeof gradeData.average !== 'undefined' && !isNaN(parseFloat(gradeData.average)) ? parseFloat(gradeData.average) : average
+      setOriginalAverage(Number(providedAvg))
     } else {
       setCurrent(gradeData)
+      const providedAvg = typeof gradeData.average !== 'undefined' && !isNaN(parseFloat(gradeData.average)) ? parseFloat(gradeData.average) : 0
+      setOriginalAverage(Number(providedAvg))
     }
   }, [selectedGrade])
 
@@ -168,7 +173,6 @@ export const WhatIf = ({ selectedGrade }) => {
   const recalculateGrades = (categories, scores) => {
     const updatedCategories = { ...categories }
     
-    // Calculate each category's percentage based on points, weighted by assignment weight
     Object.keys(updatedCategories).forEach((categoryName) => {
       const categoryScores = scores.filter(s => {
         if (s.category !== categoryName) return false
@@ -250,13 +254,22 @@ export const WhatIf = ({ selectedGrade }) => {
 
   const handleEditPercentage = (index, newPercentage) => {
     const updatedScores = [...current.scores]
-    const totalPoints = parseFloat(updatedScores[index].totalPoints) || 100
-    const newScore = (newPercentage / 100) * totalPoints
+    if (newPercentage === '' || newPercentage === null) {
+      updatedScores[index] = {
+        ...updatedScores[index],
+        percentage: '',
+        score: '',
+      }
+    } else {
+      const num = parseFloat(newPercentage)
+      const totalPoints = parseFloat(updatedScores[index].totalPoints) || 100
+      const newScore = !isNaN(num) ? (num / 100) * totalPoints : 0
 
-    updatedScores[index] = {
-      ...updatedScores[index],
-      percentage: newPercentage,
-      score: newScore,
+      updatedScores[index] = {
+        ...updatedScores[index],
+        percentage: num,
+        score: newScore,
+      }
     }
     const { categories: updatedCategories, average } = recalculateGrades(current.categories || {}, updatedScores)
 
@@ -347,7 +360,11 @@ export const WhatIf = ({ selectedGrade }) => {
   return (
     <div className='space-y-4'>
       <div className="flex gap-4 overflow-x-auto">
-        <RingGradeStat grade={parseFloat(current.average || 0).toPrecision(4)} />
+        <RingGradeStat
+          grade={parseFloat(current.average || 0).toPrecision(4)}
+          whatif={true}
+          whatifGrade={originalAverage !== null ? Number(originalAverage).toPrecision(4) : undefined}
+        />
         <CategoryGradeList>
           <Popover open={isAdding} onOpenChange={setIsAdding}>
             <PopoverTrigger asChild>

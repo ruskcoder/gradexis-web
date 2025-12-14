@@ -31,8 +31,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Trash2, Edit, Save } from 'lucide-react'
 
 export const gradeAndColor = (grade, badges = null) => {
-  if (!grade || grade === '') grade = "···";
-  else grade = parseFloat(grade).toPrecision(4);
+  if (grade === null || typeof grade === 'undefined' || grade === '') {
+    grade = "···"
+  } else {
+    grade = parseFloat(grade).toPrecision(4)
+  }
 
   if (badges && badges.includes("exempt")) {
     return { grade: "X", gradeColor: "bg-sky-500" }
@@ -139,10 +142,23 @@ export function ClassGradesList({ children }) {
 export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditPercentage }) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
-  const [editingPercentage, setEditingPercentage] = React.useState(String(scoreData.percentage || ''))
+  const initialEditingValue = (() => {
+    const p = scoreData.percentage
+    if (p === null || typeof p === 'undefined' || p === '') return ''
+    const s = String(p).trim()
+    return s.endsWith('%') ? s.slice(0, -1) : s
+  })()
+  const [editingPercentage, setEditingPercentage] = React.useState(initialEditingValue)
+  React.useEffect(() => {
+    if (!isEditing) {
+      const p = scoreData.percentage
+      const s = (p === null || typeof p === 'undefined' || p === '') ? '' : String(p).trim()
+      setEditingPercentage(s.endsWith('%') ? s.slice(0, -1) : s)
+    }
+  }, [scoreData.percentage, isEditing])
   const assignmentName = scoreData.name
   const date = scoreData.dateDue
-  const displayGrade = scoreData.weight !== undefined && scoreData.percentage !== undefined ? scoreData.percentage : scoreData.score
+  const displayGrade = (scoreData.percentage !== undefined && scoreData.percentage !== null) ? scoreData.percentage : scoreData.score
   const { grade, gradeColor } = gradeAndColor(displayGrade, scoreData.badges)
   const category = scoreData.category
   const badgeColors = {
@@ -165,14 +181,22 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
 
   const handleSavePercentage = () => {
     if (onEditPercentage) {
-      onEditPercentage(parseFloat(editingPercentage) || 0)
+      const raw = String(editingPercentage).trim()
+      if (raw === '') {
+        onEditPercentage('')
+      } else {
+        const parsed = parseFloat(raw.replace('%', ''))
+        onEditPercentage(!isNaN(parsed) ? parsed : 0)
+      }
     }
     setIsEditing(false)
   }
 
   const handleEditClick = () => {
     setIsEditing(true)
-    setEditingPercentage(String(scoreData.percentage || ''))
+    const p = scoreData.percentage
+    const s = (p === null || typeof p === 'undefined') ? '' : String(p).trim()
+    setEditingPercentage(s.endsWith('%') ? s.slice(0, -1) : s)
   }
 
   return (
@@ -237,7 +261,7 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
             )}
             <div className="grid grid-cols-2 items-center gap-4">
               <span className="text-sm font-medium">Score:</span>
-              <span className="text-sm">{scoreData.score !== undefined ? parseFloat(scoreData.score).toFixed(2) : (grade || 'Not graded')}</span>
+              <span className="text-sm">{scoreData.score !== '' && scoreData.score !== null && typeof scoreData.score !== 'undefined' ? parseFloat(scoreData.score).toFixed(2) : '···'}</span>
             </div>
             {scoreData.totalPoints !== undefined && (
               <div className="grid grid-cols-2 items-center gap-4">
@@ -250,14 +274,17 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
                 <span className="text-sm font-medium">Percentage:</span>
                 {isEditing ? (
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*\\.?[0-9]*"
                     value={editingPercentage}
                     onChange={(e) => setEditingPercentage(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSavePercentage() } }}
                     className="h-8"
-                    placeholder={String(scoreData.percentage || '0')}
+                    placeholder={scoreData.percentage != "" ? parseFloat(scoreData.percentage).toFixed(2) + "%" : ""}
                   />
                 ) : (
-                  <span className="text-sm">{scoreData.percentage}</span>
+                  <span className="text-sm">{scoreData.percentage !== '' && scoreData.percentage !== null && typeof scoreData.percentage !== 'undefined' ? parseFloat(scoreData.percentage).toFixed(2) + "%" : '···'}</span>
                 )}
               </div>
             )}
