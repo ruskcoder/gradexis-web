@@ -96,6 +96,28 @@ export default function App() {
       // 
     }
 
+    const blockedUsers = process.env.BLOCKED_USERS?.split(',') || [];
+    if (blockedUsers.includes(currentUser.username)) {
+      document.body.innerHTML = `
+        <div style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background-color: #f8d7da;
+          color: #721c24;
+          font-family: Arial, sans-serif;
+          font-size: 24px;
+          text-align: center;
+        ">
+          <div>
+        <strong>You have been blocked. <br/> Please contact info@gradexis.com for assistance.</strong>
+          </div>
+        </div>
+      `;
+      document.body.style.margin = "0";
+      document.body.style.padding = "0";
+    }
   }, []);
 
   useEffect(() => {
