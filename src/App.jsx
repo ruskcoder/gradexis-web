@@ -96,7 +96,7 @@ export default function App() {
       // 
     }
 
-    const blockedUsers = process.env.BLOCKED_USERS?.split(',') || [];
+    const blockedUsers = import.meta.env.VITE_BLOCKED_USERS?.split(',') || [];
     if (blockedUsers.includes(currentUser.username)) {
       document.body.innerHTML = `
         <div style="
