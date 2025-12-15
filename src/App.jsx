@@ -18,7 +18,6 @@ import ScheduleEditor from './pages/academics/ScheduleEditor';
 import FinalExamCalculator from './pages/calculators/FinalExam';
 import GPARankCalculator from './pages/calculators/GPA-Rank';
 import { useStore } from '@/lib/store';
-import { fetchReferralData } from './pages/Settings';
 import { useCurrentUser } from '@/lib/store';
 import { login } from '@/lib/grades-api';
 import { toast } from "sonner"
@@ -26,6 +25,53 @@ import { Toaster } from '@/components/ui/sonner';
 import { API_URL } from '@/lib/constants';
 import { Megaphone } from 'lucide-react';
 import { applyColorTheme } from '@/lib/apply-color-theme';
+
+export async function fetchReferralData(user, changeUserData, {
+  setReferralCode,
+  setReferralStatus,
+  setLoading,
+} = {}) {
+  if (!user) return
+  if (setLoading) setLoading(true)
+  try {
+    const response = await fetch(`${API_URL}referral?username=${encodeURIComponent(user.username)}`)
+    const data = await response.json()
+
+    const referralCode = data.referralCode || 'N/A'
+    const numReferrals = data.numReferrals ?? 0
+    if (setReferralCode) setReferralCode(referralCode)
+    if (setReferralStatus) setReferralStatus(numReferrals)
+
+    const isPremium = numReferrals >= 0
+    changeUserData('premium', isPremium)
+
+    if (data?.blocked) {
+      document.body.innerHTML = `
+        <div style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background-color: #f8d7da;
+          color: #721c24;
+          font-family: Arial, sans-serif;
+          font-size: 24px;
+          text-align: center;
+        ">
+          <div>
+        <strong>You have been blocked. <br/> Please contact info@gradexis.com for assistance.</strong>
+          </div>
+        </div>
+      `;
+      document.body.style.margin = "0";
+      document.body.style.padding = "0";
+    }
+  } catch (error) {
+    console.error('Failed to fetch referral data:', error)
+  } finally {
+    if (setLoading) setLoading(false)
+  }
+}
 
 export async function showWebNotificationsForUser(currentUser, loggingIn = false) {
   if (!currentUser) return
@@ -94,29 +140,6 @@ export default function App() {
       showWebNotificationsForUser(currentUser);
     } catch (e) {
       // 
-    }
-
-    const blockedUsers = import.meta.env.VITE_BLOCKED_USERS?.split(',') || [];
-    if (blockedUsers.includes(currentUser.username)) {
-      document.body.innerHTML = `
-        <div style="
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          background-color: #f8d7da;
-          color: #721c24;
-          font-family: Arial, sans-serif;
-          font-size: 24px;
-          text-align: center;
-        ">
-          <div>
-        <strong>You have been blocked. <br/> Please contact info@gradexis.com for assistance.</strong>
-          </div>
-        </div>
-      `;
-      document.body.style.margin = "0";
-      document.body.style.padding = "0";
     }
   }, []);
 

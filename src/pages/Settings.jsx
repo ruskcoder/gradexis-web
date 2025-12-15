@@ -4,6 +4,7 @@ import { useCurrentUser, useStore } from '@/lib/store'
 import { API_URL } from '@/lib/constants'
 import { getColorThemes } from '@/lib/color-themes'
 import { applyColorTheme } from '@/lib/apply-color-theme'
+import { fetchReferralData } from '@/App'
 import {
   Select,
   SelectTrigger,
@@ -32,31 +33,6 @@ const ColorIcons = ({ colors, darkColors, isDark }) => {
       ))}
     </div>
   )
-}
-
-export async function fetchReferralData(user, changeUserData, {
-  setReferralCode,
-  setReferralStatus,
-  setLoading,
-} = {}) {
-  if (!user) return
-  if (setLoading) setLoading(true)
-  try {
-    const response = await fetch(`${API_URL}referral?username=${encodeURIComponent(user.username)}`)
-    const data = await response.json()
-
-    const referralCode = data.referralCode || 'N/A'
-    const numReferrals = data.numReferrals ?? 0
-    if (setReferralCode) setReferralCode(referralCode)
-    if (setReferralStatus) setReferralStatus(numReferrals)
-
-    const isPremium = numReferrals >= 0
-    changeUserData('premium', isPremium)
-  } catch (error) {
-    console.error('Failed to fetch referral data:', error)
-  } finally {
-    if (setLoading) setLoading(false)
-  }
 }
 
 export default function Settings() {
