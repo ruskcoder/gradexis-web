@@ -17,19 +17,6 @@ import {
 export const categoryColor = (category) => {
   switch (category.toLowerCase()) {
     case "major":
-      return "bg-purple-500"
-    case "minor":
-      return "bg-green-500"
-    case "other":
-      return "bg-yellow-500"
-    default:
-      return "bg-gray-500"
-  }
-}
-
-export const categoryColorHex = (category) => {
-  switch (category.toLowerCase()) {
-    case "major":
       return "#a855f7" 
 
     case "minor":
@@ -103,7 +90,7 @@ export function CategoryGradeStat({ categoryData }) {
             <ItemTitle className="text-2xl">{percent}</ItemTitle>
           </ItemContent>
           <ItemActions className="pr-1">
-            <div className={`w-5 h-10 rounded-sm ${categoryColor(categoryName)}`}></div>
+            <div className="w-5 h-10 rounded-sm" style={{ backgroundColor: categoryColor(categoryName) }}></div>
           </ItemActions>
         </Item>
       </PopoverTrigger>

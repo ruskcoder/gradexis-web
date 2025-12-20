@@ -4,7 +4,6 @@ import {
   Bar,
   CartesianGrid,
   XAxis,
-  ResponsiveContainer,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -12,17 +11,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart'
-import { categoryColorHex } from '@/components/custom/grades-stats'
-import { useStore } from '@/lib/store'
+import { categoryColor } from '@/components/custom/grades-stats'
+import { useCurrentUser } from '@/lib/store'
 
 export const History = ({ selectedGrade, term }) => {
-  const currentUser = useStore((state) => {
-    const { users, currentUserIndex } = state;
-    if (users.length === 0 || currentUserIndex < 0 || currentUserIndex >= users.length) {
-      return null;
-    }
-    return users[currentUserIndex];
-  });
+  const currentUser = useCurrentUser();
 
   const historyData = useMemo(() => {
     if (!selectedGrade || !currentUser || !term) return null;
@@ -80,8 +73,8 @@ export const History = ({ selectedGrade, term }) => {
     : [];
 
   return (
-    <div className="space-y-6 overflow-y-auto h-full pb-4 grid grid-cols-1 gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-      <Card className="mb-0">
+    <div className="space-y-6 overflow-y-auto pb-4 grid grid-cols-1 gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+      <Card className="mb-0 h-fit">
         <CardHeader>
           <CardTitle>Grade History</CardTitle>
         </CardHeader>
@@ -95,12 +88,13 @@ export const History = ({ selectedGrade, term }) => {
             }}
             className="w-full h-full"
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={historyData}
-                margin={{ left: 12, right: 12, top: 0, bottom: 0 }}
-                maxBarSize={50}
-              >
+            <BarChart
+              width={400}
+              height={250}
+              data={historyData}
+              margin={{ left: 12, right: 12, top: 0, bottom: 0 }}
+              maxBarSize={50}
+            >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="time"
@@ -117,14 +111,13 @@ export const History = ({ selectedGrade, term }) => {
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+            </ChartContainer>
         </CardContent>
       </Card>
 
       {}
       {categories.map((category) => (
-        <Card key={category} className="mb-0">
+        <Card key={category} className="mb-0 h-fit">
           <CardHeader>
             <CardTitle>{category}</CardTitle>
           </CardHeader>
@@ -133,17 +126,18 @@ export const History = ({ selectedGrade, term }) => {
               config={{
                 [category]: {
                   label: category,
-                  color: categoryColorHex(category),
+                  color: categoryColor(category),
                 },
               }}
               className="w-full h-full"
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={historyData}
-                  margin={{ left: 12, right: 12, top: 0, bottom: 0 }}
-                maxBarSize={50}
-                >
+              <BarChart
+                width={400}
+                height={250}
+                data={historyData}
+                margin={{ left: 12, right: 12, top: 0, bottom: 0 }}
+              maxBarSize={50}
+              >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="time"
@@ -155,13 +149,12 @@ export const History = ({ selectedGrade, term }) => {
                   />
                   <Bar
                     dataKey={category}
-                    fill={categoryColorHex(category)}
+                    fill={categoryColor(category)}
                     isAnimationActive={false}
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+              </ChartContainer>
           </CardContent>
         </Card>
       ))}

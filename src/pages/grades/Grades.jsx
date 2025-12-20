@@ -4,6 +4,7 @@ import { GradesLayout } from './GradesLayout'
 import { GradesView } from './GradesView'
 import { WhatIf } from '@/pages/calculators/WhatIf'
 import { History } from '@/pages/statistics/History'
+import { TimelinePage } from '@/pages/statistics/Timeline'
 import { useCurrentUser } from '@/lib/store'
 
 export default function Grades() {
@@ -22,6 +23,10 @@ export default function Grades() {
     case '/statistics/history':
       element = <History />;
       pageTitle = 'History';
+      break;
+    case '/statistics/timeline':
+      element = <TimelinePage />;
+      pageTitle = 'Timeline';
       break;
     default:
       element = <GradesView />;

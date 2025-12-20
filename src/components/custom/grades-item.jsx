@@ -202,9 +202,9 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Item variant="outline" className="p-2 max-w-[1000px] min-w-[275px] cursor-pointer hover:bg-accent transition-colors">
+        <Item variant="outline" className="p-2 min-w-[275px] cursor-pointer hover:bg-accent transition-colors">
           <div className="flex w-full items-center justify-between">
-            <div className={`h-[44px] w-5 rounded-sm mr-1 ${categoryColor(category)}`} />
+            <div className="h-[44px] w-5 rounded-sm mr-1" style={{ backgroundColor: categoryColor(category) }} />
             <ItemContent className="gap-0 ml-1 mr-3 min-w-0">
               <ItemTitle className="text-base font-semibold truncate block">{assignmentName}</ItemTitle>
               <ItemDescription className="truncate block">
