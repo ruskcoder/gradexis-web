@@ -28,6 +28,7 @@ export interface Shortcut {
   image: string;
 }
 
+
 export interface User {
   loginType: '' | 'credentials' | 'classlink';
   username: string;
@@ -54,6 +55,11 @@ export interface User {
   rankDataPoints: Array<{ gpa: number | null; rank: number | null }>;
   todos: TodoItem[];
   shortcuts: Shortcut[];
+  gradesStore: {
+    initialTerm: string;
+    termList: string[];
+    history: Record<string, Array<{ loadedAt: number; classes: any[] }>>;
+  };
 }
 
 const DEFAULT_USER: User = {
@@ -85,6 +91,11 @@ const DEFAULT_USER: User = {
   ],
   todos: [],
   shortcuts: [],
+  gradesStore: {
+    initialTerm: '',
+    termList: [],
+    history: {},
+  },
 };
 
 interface Session {
@@ -118,6 +129,15 @@ interface UserStore {
   addShortcut: (shortcut: Omit<Shortcut, 'id'>) => void;
   updateShortcut: (id: string, updates: Partial<Shortcut>) => void;
   removeShortcut: (id: string) => void;
+  addGradesStore: (initialTerm: string, termList: string[], term: string, classes: any[]) => void;
+  addGradesStoreLoad: (term: string, classes: any[]) => void;
+  updateLatestGradesLoadTime: (term: string) => void;
+  getGradesStore: () => {
+    initialTerm: string;
+    termList: string[];
+    history: Record<string, Array<{ loadedAt: number; classes: any[] }>>;
+  };
+  clearGradesStore: () => void;
 }
 
 export const useStore = create<UserStore>()(
@@ -306,14 +326,122 @@ export const useStore = create<UserStore>()(
           return { users: newUsers };
         });
       },
+
+      addGradesStore: (initialTerm: string, termList: string[], term: string, classes: any[]) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            const newHistory = { ...currentUser.gradesStore.history };
+            if (!newHistory[term]) {
+              newHistory[term] = [];
+            }
+            newHistory[term].push({
+              loadedAt: Date.now(),
+              classes,
+            });
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              gradesStore: {
+                initialTerm,
+                termList,
+                history: newHistory,
+              },
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      addGradesStoreLoad: (term: string, classes: any[]) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            const newHistory = { ...currentUser.gradesStore.history };
+            if (!newHistory[term]) {
+              newHistory[term] = [];
+            }
+            newHistory[term].push({
+              loadedAt: Date.now(),
+              classes,
+            });
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              gradesStore: {
+                ...currentUser.gradesStore,
+                history: newHistory,
+              },
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      updateLatestGradesLoadTime: (term: string) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            const newHistory = { ...currentUser.gradesStore.history };
+            if (newHistory[term] && newHistory[term].length > 0) {
+              const latestIndex = newHistory[term].length - 1;
+              newHistory[term][latestIndex] = {
+                ...newHistory[term][latestIndex],
+                loadedAt: Date.now(),
+              };
+              newUsers[state.currentUserIndex] = {
+                ...currentUser,
+                gradesStore: {
+                  ...currentUser.gradesStore,
+                  history: newHistory,
+                },
+              } as User;
+            }
+          }
+          return { users: newUsers };
+        });
+      },
+
+      getGradesStore: () => {
+        const { users, currentUserIndex } = get();
+        if (users.length === 0 || currentUserIndex < 0 || currentUserIndex >= users.length) {
+          return {
+            initialTerm: '',
+            termList: [],
+            history: {},
+          };
+        }
+        return users[currentUserIndex]?.gradesStore || {
+          initialTerm: '',
+          termList: [],
+          history: {},
+        };
+      },
+
+      clearGradesStore: () => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              gradesStore: {
+                initialTerm: '',
+                termList: [],
+                history: {},
+              },
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
     }),
     {
       name: 'user-store', 
       partialize: (state) => ({
         users: state.users,
         currentUserIndex: state.currentUserIndex,
-        cache: state.cache,
-        cacheTimestamp: state.cacheTimestamp,
       }),
       onRehydrateStorage: () => (persistedState) => {
         try {
@@ -344,30 +472,6 @@ export const useStore = create<UserStore>()(
 
           ;(persistedState as any).users = mergedUsers
           ;(persistedState as any).currentUserIndex = idx
-
-          const ts: any = (persistedState as any).cacheTimestamp
-          if (ts && typeof ts === 'number') {
-            const now = Date.now()
-            const age = now - ts
-            const FIVE_MIN = 5 * 60 * 1000
-            if (age > FIVE_MIN) {
-              ;(persistedState as any).cache = {}
-              ;(persistedState as any).cacheTimestamp = null
-            }
-          }
-
-          try {
-            const cacheObj = (persistedState as any).cache
-            if (cacheObj && typeof cacheObj === 'object') {
-              for (const key of Object.keys(cacheObj)) {
-                if (key.startsWith(CLASSES_ENDPOINT + ':')) {
-                  delete cacheObj[key]
-                }
-              }
-            }
-          } catch (e) {
-            console.error('Error pruning classes cache on rehydrate', e)
-          }
         } catch (e) {
           console.error(e)
         }

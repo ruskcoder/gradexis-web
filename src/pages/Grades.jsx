@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Progress } from "@/components/ui/progress"
 import { GradesItem, GradesList, ClassGradesItem, ClassGradesList } from '../components/custom/grades-item'
 import {
@@ -14,9 +14,16 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { RingGradeStat, CategoryGradeStat, CategoryGradeList } from '@/components/custom/grades-stats'
-import { useCurrentUser } from '@/lib/store'
+import { useCurrentUser, useStore } from '@/lib/store'
 import { getClasses } from '@/lib/grades-api'
+import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData } from '@/lib/grades-store'
 import { WhatIf } from '@/pages/calculators/WhatIf'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
@@ -30,28 +37,61 @@ export default function Grades() {
   const [loadingTerms, setLoadingTerms] = useState({});
   const [whatIfMode, setWhatIfMode] = useState(false);
   const [showPremiumDialog, setShowPremiumDialog] = useState(false);
+  const [storageMode, setStorageMode] = useState({});
+  const [lastLoadedDate, setLastLoadedDate] = useState({});
 
   const user = useCurrentUser();
   const location = useLocation();
+  const abortControllerRef = useRef({});
+  const userHasSelectedTermRef = useRef(false);
 
   async function fetchClasses(term = null, { initial = false } = {}) {
     const key = initial ? 'initial' : term;
     setLoadingTerms(prev => ({ ...prev, [key]: true }));
     setProgressByTerm(prev => ({ ...prev, [key]: { percent: initial ? 0 : 4, message: 'Initializing Connection' } }));
+
+    const controller = new AbortController();
+    abortControllerRef.current[key] = controller;
+
     try {
       const generator = getClasses(term);
       for await (const chunk of generator) {
+        if (controller.signal.aborted) return;
+
         if (chunk.percent !== undefined) {
           setProgressByTerm(prev => ({ ...prev, [key]: { percent: chunk.percent, message: chunk.message } }));
         } else if (chunk.success === true) {
           if (initial) {
             setTerms(chunk.termList);
-            setCurrentTerm(chunk.term);
+
+            if (!userHasSelectedTermRef.current) {
+              setCurrentTerm(chunk.term);
+            }
             setClassesDataByTerm(prev => ({ ...prev, [chunk.term]: chunk.classes }));
-            setLoadingTerms(prev => ({ ...prev, initial: false }));
+
+            setLoadingTerms(prev => {
+              const newState = { ...prev };
+              delete newState.initial;
+              newState[chunk.term] = false;
+              return newState;
+            });
+            setProgressByTerm(prev => {
+              const newState = { ...prev };
+              delete newState.initial;
+              return newState;
+            });
+            setStorageMode(prev => ({ ...prev, [chunk.term]: false }));
+            setLastLoadedDate(prev => ({ ...prev, [chunk.term]: new Date() }));
           } else {
             setClassesDataByTerm(prev => ({ ...prev, [term]: chunk.classes }));
             setLoadingTerms(prev => ({ ...prev, [term]: false }));
+            setProgressByTerm(prev => {
+              const newState = { ...prev };
+              delete newState[term];
+              return newState;
+            });
+            setStorageMode(prev => ({ ...prev, [term]: false }));
+            setLastLoadedDate(prev => ({ ...prev, [term]: new Date() }));
           }
         }
       }
@@ -76,11 +116,52 @@ export default function Grades() {
   }, [whatIfMode, user]);
 
   const handleTabChange = (term) => {
+    userHasSelectedTermRef.current = true;
     setCurrentTerm(term);
     setSelectedGrade(null);
     if (classesDataByTerm[term] || loadingTerms[term]) return;
     fetchClasses(term);
   };
+
+  const handleLoadFromStorage = () => {
+    const isInitialLoad = loadingTerms.initial;
+    const termToLoad = isInitialLoad ? getInitialTerm() : currentTerm;
+
+    if (!termToLoad) return;
+
+    const latestLoad = getLatestGradesLoad(termToLoad);
+
+    if (latestLoad) {
+      if (isInitialLoad) {
+
+        const storedTermList = getTermList();
+        setTerms(storedTermList);
+        setCurrentTerm(termToLoad);
+        setClassesDataByTerm(prev => ({ ...prev, [termToLoad]: latestLoad.classes }));
+        setLoadingTerms(prev => ({ ...prev, initial: false }));
+        setStorageMode(prev => ({ ...prev, [termToLoad]: true }));
+        setLastLoadedDate(prev => ({ ...prev, [termToLoad]: new Date(latestLoad.loadedAt) }));
+      } else {
+
+        setClassesDataByTerm(prev => ({ ...prev, [termToLoad]: latestLoad.classes }));
+        setLoadingTerms(prev => ({ ...prev, [termToLoad]: false }));
+        setStorageMode(prev => ({ ...prev, [termToLoad]: true }));
+        setLastLoadedDate(prev => ({ ...prev, [termToLoad]: new Date(latestLoad.loadedAt) }));
+      }
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '';
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
+
   const showTitle = user ? user.showPageTitles !== false : true;
 
   return (
@@ -114,12 +195,26 @@ export default function Grades() {
                 ))}
               </TabsList>}
               <div className="flex-1 overflow-y-auto">
-                {(loadingTerms[currentTerm] || loadingTerms.initial) && <div>
+                {(loadingTerms[currentTerm] || loadingTerms.initial) && <div className='flex flex-col items-center justify-center'>
                   <div className='w-full text-center my-2'>{progressByTerm[currentTerm]?.message || progressByTerm.initial?.message}</div>
                   <Progress value={progressByTerm[currentTerm]?.percent || progressByTerm.initial?.percent || 0} />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3" 
+                    onClick={handleLoadFromStorage}
+                    disabled={!hasStorageData(loadingTerms.initial ? getInitialTerm() : currentTerm)}
+                  >
+                    Load from Storage
+                  </Button>
                 </div>}
                 {!loadingTerms[currentTerm] && !loadingTerms.initial && classesDataByTerm[currentTerm] && (
                   <TabsContent value={currentTerm} className="mt-2">
+                    {storageMode[currentTerm] && (
+                      <div className="mb-4 p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                        Last Loaded: {formatDate(lastLoadedDate[currentTerm])}
+                      </div>
+                    )}
                     {classesDataByTerm[currentTerm].length === 0 ? (
                       <div className="flex items-center justify-center h-16">
                         <p className="text-muted-foreground">No classes to display</p>
@@ -127,7 +222,10 @@ export default function Grades() {
                     ) : (
                       <GradesList variant={user.gradesView}>
                         {classesDataByTerm[currentTerm].map((course, index) => (
-                          <div key={index} onClick={() => setSelectedGrade(course)}>
+                          <div 
+                            key={index} 
+                            onClick={() => course.average && setSelectedGrade(course)}
+                          >
                             <GradesItem
                               courseName={course.name}
                               id={course.course}

@@ -1,6 +1,7 @@
 import { LOGIN_TYPES, API_URL, API_PLATFORM_ENDPOINTS, LOGIN_ENDPOINT, PLATFORMS, CLASSES_ENDPOINT, ATTENDANCE_ENDPOINT, SCHEDULE_ENDPOINT, TRANSCRIPT_ENDPOINT, REPORT_CARD_ENDPOINT, PROGRESS_REPORT_ENDPOINT, TEACHERS_ENDPOINT } from "@/lib/constants";
 import { pathMerge } from "@/lib/utils";
-import { setSession, currentUser, User, getSession, useStore } from "@/lib/store"; 
+import { setSession, currentUser, User, getSession, useStore } from "@/lib/store";
+import { initializeGradesStore, addGradesLoad } from "@/lib/grades-store";
 
 type Platform = typeof PLATFORMS[number];
 type LoginType = typeof LOGIN_TYPES[number];
@@ -59,14 +60,14 @@ export async function getAttendance(date?: string) {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const options = { date: date || '' };
   const cacheKey = generateCacheKey(ATTENDANCE_ENDPOINT, options);
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
     return cachedData;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -95,9 +96,9 @@ export async function getAttendance(date?: string) {
     throw new Error(data.message || 'Failed to fetch attendance with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
-  
+
   setCachedValue(cacheKey, data);
-  
+
   return data;
 }
 
@@ -107,7 +108,7 @@ export async function* getClasses(term?: string) {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const options = { term: term || '' };
   const cacheKey = generateCacheKey(CLASSES_ENDPOINT, options);
 
@@ -116,7 +117,7 @@ export async function* getClasses(term?: string) {
     yield cachedData;
     return;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -155,7 +156,7 @@ export async function* getClasses(term?: string) {
   try {
     while (true) {
       const { done, value } = await reader.read();
-      
+
       if (value) {
         buffer += decoder.decode(value, { stream: true });
       }
@@ -164,17 +165,24 @@ export async function* getClasses(term?: string) {
       for (const chunk of chunks) {
         if (chunk.trim()) {
           const data = JSON.parse(chunk);
-          
+
           if (data.percent !== undefined && data.message !== undefined) {
             yield {
               percent: data.percent,
               message: data.message
             };
           }
-          
+
           if (data.success === true) {
             if (data.session) setSession(data.session);
             setCachedValue(cacheKey, data);
+
+            if (term) {
+              addGradesLoad(term, data.classes);
+            } else {
+              initializeGradesStore(data.term, data.termList, data.term, data.classes);
+            }
+
             yield data;
             return;
           }
@@ -188,6 +196,15 @@ export async function* getClasses(term?: string) {
       if (data.success === true) {
         if (data.session) setSession(data.session);
         setCachedValue(cacheKey, data);
+
+        if (term) {
+
+          addGradesLoad(term, data.classes);
+        } else {
+
+          initializeGradesStore(data.term, data.termList, data.term, data.classes);
+        }
+
         yield data;
       }
     }
@@ -202,13 +219,13 @@ export async function getSchedule() {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const cacheKey = generateCacheKey(SCHEDULE_ENDPOINT, {});
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
     return cachedData;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -237,9 +254,9 @@ export async function getSchedule() {
     throw new Error(data.message || 'Failed to fetch schedule with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
-  
+
   setCachedValue(cacheKey, data);
-  
+
   return data;
 }
 
@@ -249,13 +266,13 @@ export async function getTranscript() {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const cacheKey = generateCacheKey(TRANSCRIPT_ENDPOINT, {});
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
     return cachedData;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -284,9 +301,9 @@ export async function getTranscript() {
     throw new Error(data.message || 'Failed to fetch transcript with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
-  
+
   setCachedValue(cacheKey, data);
-  
+
   return data;
 }
 
@@ -296,13 +313,13 @@ export async function getReportCard() {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const cacheKey = generateCacheKey(REPORT_CARD_ENDPOINT, {});
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
     return cachedData;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -331,9 +348,9 @@ export async function getReportCard() {
     throw new Error(data.message || 'Failed to fetch report card with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
-  
+
   setCachedValue(cacheKey, data);
-  
+
   return data;
 }
 
@@ -343,13 +360,13 @@ export async function getProgressReport() {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const cacheKey = generateCacheKey(PROGRESS_REPORT_ENDPOINT, {});
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
     return cachedData;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -378,9 +395,9 @@ export async function getProgressReport() {
     throw new Error(data.message || 'Failed to fetch progress report with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
-  
+
   setCachedValue(cacheKey, data);
-  
+
   return data;
 }
 
@@ -390,13 +407,13 @@ export async function getTeachers() {
   if (!user) {
     throw new Error('No user logged in');
   }
-  
+
   const cacheKey = generateCacheKey(TEACHERS_ENDPOINT, {});
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
     return cachedData;
   }
-  
+
   let body = {
     loginType: user.loginType,
     loginData: {
@@ -425,8 +442,8 @@ export async function getTeachers() {
     throw new Error(data.message || 'Failed to fetch teachers with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
-  
+
   setCachedValue(cacheKey, data);
-  
+
   return data;
 }
