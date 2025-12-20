@@ -335,7 +335,29 @@ export const useStore = create<UserStore>()(
             const newHistory = { ...currentUser.gradesStore.history };
             if (!newHistory[term]) {
               newHistory[term] = [];
+            } else {
+              newHistory[term] = [...newHistory[term]];
             }
+            
+            if (newHistory[term].length > 0) {
+              const latestLoad = newHistory[term][newHistory[term].length - 1];
+              if (JSON.stringify(latestLoad.classes) === JSON.stringify(classes)) {
+                newHistory[term][newHistory[term].length - 1] = {
+                  ...latestLoad,
+                  loadedAt: Date.now(),
+                };
+                newUsers[state.currentUserIndex] = {
+                  ...currentUser,
+                  gradesStore: {
+                    initialTerm,
+                    termList,
+                    history: newHistory,
+                  },
+                } as User;
+                return { users: newUsers };
+              }
+            }
+            
             newHistory[term].push({
               loadedAt: Date.now(),
               classes,
@@ -361,7 +383,30 @@ export const useStore = create<UserStore>()(
             const newHistory = { ...currentUser.gradesStore.history };
             if (!newHistory[term]) {
               newHistory[term] = [];
+            } else {
+              newHistory[term] = [...newHistory[term]];
             }
+            
+            // Check if the latest load has identical classes
+            if (newHistory[term].length > 0) {
+              const latestLoad = newHistory[term][newHistory[term].length - 1];
+              if (JSON.stringify(latestLoad.classes) === JSON.stringify(classes)) {
+                // Update timestamp instead of adding duplicate
+                newHistory[term][newHistory[term].length - 1] = {
+                  ...latestLoad,
+                  loadedAt: Date.now(),
+                };
+                newUsers[state.currentUserIndex] = {
+                  ...currentUser,
+                  gradesStore: {
+                    ...currentUser.gradesStore,
+                    history: newHistory,
+                  },
+                } as User;
+                return { users: newUsers };
+              }
+            }
+            
             newHistory[term].push({
               loadedAt: Date.now(),
               classes,
@@ -385,6 +430,7 @@ export const useStore = create<UserStore>()(
             const currentUser = newUsers[state.currentUserIndex]!;
             const newHistory = { ...currentUser.gradesStore.history };
             if (newHistory[term] && newHistory[term].length > 0) {
+              newHistory[term] = [...newHistory[term]];
               const latestIndex = newHistory[term].length - 1;
               newHistory[term][latestIndex] = {
                 ...newHistory[term][latestIndex],

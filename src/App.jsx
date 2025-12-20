@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import MainLayout from '@/components/layout/MainLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Grades from './pages/Grades';
+import Grades from './pages/grades/Grades';
 import Settings from './pages/Settings';
 import Attendance from './pages/academics/Attendance';
 import Schedules from './pages/academics/Schedules';
@@ -172,6 +172,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/grades" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/grades/whatif" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/statistics/history" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/academics/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
           <Route path="/academics/schedules" element={<ProtectedRoute><Schedules /></ProtectedRoute>} />

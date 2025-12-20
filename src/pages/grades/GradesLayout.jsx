@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Progress } from "@/components/ui/progress"
-import { GradesItem, GradesList, ClassGradesItem, ClassGradesList } from '../components/custom/grades-item'
+import { GradesItem, GradesList } from '@/components/custom/grades-item'
 import {
   Tabs,
   TabsContent,
@@ -8,42 +9,33 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { Button } from '@/components/ui/button'
-import { PremiumDialog } from '@/components/custom/premium-dialog'
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { RingGradeStat, CategoryGradeStat, CategoryGradeList } from '@/components/custom/grades-stats'
-import { useCurrentUser, useStore } from '@/lib/store'
+import { useCurrentUser } from '@/lib/store'
 import { getClasses } from '@/lib/grades-api'
 import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData } from '@/lib/grades-store'
-import { WhatIf } from '@/pages/calculators/WhatIf'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { PremiumDialog } from '@/components/custom/premium-dialog'
+import { History } from '@/pages/statistics/History'
 
-export default function Grades() {
+export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }) {
   const [terms, setTerms] = useState([]);
   const [currentTerm, setCurrentTerm] = useState('');
   const [progressByTerm, setProgressByTerm] = useState({});
   const [classesDataByTerm, setClassesDataByTerm] = useState({});
   const [selectedGrade, setSelectedGrade] = useState(null);
   const [loadingTerms, setLoadingTerms] = useState({});
-  const [whatIfMode, setWhatIfMode] = useState(false);
-  const [showPremiumDialog, setShowPremiumDialog] = useState(false);
   const [storageMode, setStorageMode] = useState({});
   const [lastLoadedDate, setLastLoadedDate] = useState({});
+  const [showPremiumDialog, setShowPremiumDialog] = useState(false);
 
   const user = useCurrentUser();
   const location = useLocation();
   const abortControllerRef = useRef({});
   const userHasSelectedTermRef = useRef(false);
+  const isWhatIfMode = location.pathname === '/grades/whatif';
 
   async function fetchClasses(term = null, { initial = false } = {}) {
     const key = initial ? 'initial' : term;
@@ -105,15 +97,10 @@ export default function Grades() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setWhatIfMode(params.has('whatif'));
-  }, [location.search]);
-
-  useEffect(() => {
-    if (whatIfMode && user && !user.premium) {
+    if (isWhatIfMode && user && !user.premium) {
       setShowPremiumDialog(true);
     }
-  }, [whatIfMode, user]);
+  }, [isWhatIfMode, user]);
 
   const handleTabChange = (term) => {
     userHasSelectedTermRef.current = true;
@@ -162,24 +149,13 @@ export default function Grades() {
     }).format(date);
   };
 
-  const showTitle = user ? user.showPageTitles !== false : true;
-
   return (
     <div className="space-y-8 flex flex-col h-full overflow-clip" style={{ zoom: '0.9' }}>
       {showTitle &&
         <div className="flex items-center justify-between w-full">
-          <h1 className="text-4xl font-bold">Grades</h1>
-          <Button variant="outline" className="w-32" onClick={() => setWhatIfMode(!whatIfMode)}>
-            {whatIfMode ? (<><ChevronLeft /> Grades</>) : (<>What If <ChevronRight /></>)}
-          </Button>
+          <h1 className="text-4xl font-bold">{pageTitle}</h1>
         </div>
       }
-      <PremiumDialog 
-        open={showPremiumDialog} 
-        onOpenChange={setShowPremiumDialog}
-        onCancel={() => setWhatIfMode(false)}
-        showCancel={true}
-      />
       <div className="flex overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className='space-x-2'>
           <ResizablePanel
@@ -248,31 +224,16 @@ export default function Grades() {
               </div>
             </div>
             <div className='p-6 flex-1 overflow-y-auto'>
+              <PremiumDialog 
+                open={showPremiumDialog} 
+                onOpenChange={setShowPremiumDialog}
+              />
               {!selectedGrade ? (
                 <p className="text-muted-foreground text-center h-full flex items-center justify-center max-h-[46px]">
                   Select a grade to continue.
                 </p>
-              ) : !whatIfMode ? (
-                <>
-                  <div className="flex gap-4 overflow-x-auto mb-4">
-                    <RingGradeStat grade={parseFloat(selectedGrade.average).toPrecision(4)} />
-                    <CategoryGradeList>
-                      {Object.entries(selectedGrade.categories || {}).map(([categoryName, categoryData]) => (
-                        <CategoryGradeStat
-                          key={categoryName}
-                          categoryData={{ category: categoryName, ...categoryData }}
-                        />
-                      ))}
-                    </CategoryGradeList>
-                  </div>
-                  <ClassGradesList>
-                    {(selectedGrade.scores || []).map((score, index) => (
-                      <ClassGradesItem key={index} scoreData={score} />
-                    ))}
-                  </ClassGradesList>
-                </>
               ) : (
-                <WhatIf selectedGrade={selectedGrade} />
+                React.cloneElement(element, { selectedGrade, term: currentTerm })
               )}
             </div>
           </ResizablePanel>

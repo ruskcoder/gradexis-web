@@ -27,6 +27,23 @@ export const categoryColor = (category) => {
   }
 }
 
+export const categoryColorHex = (category) => {
+  switch (category.toLowerCase()) {
+    case "major":
+      return "#a855f7" 
+
+    case "minor":
+      return "#22c55e" 
+
+    case "other":
+      return "#eab308" 
+
+    default:
+      return "#6b7280" 
+
+  }
+}
+
 export function RingGradeStat({ grade, whatif = false, whatifGrade = null }) {
   grade = parseFloat(grade).toPrecision(4)
   return (
@@ -74,9 +91,9 @@ export function CategoryGradeList({ children }) {
 export function CategoryGradeStat({ categoryData }) {
   const categoryName = categoryData.category || Object.keys(categoryData)[0]
   const data = typeof categoryData.category === 'string' ? categoryData : categoryData[categoryName]
-  
+
   const percent = parseFloat(data.percent || data.categoryPoints || 0).toPrecision(4)
-  
+
   return (
     <Popover>
       <PopoverTrigger asChild>
