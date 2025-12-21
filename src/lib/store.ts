@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { PLATFORMS, CLASSES_ENDPOINT } from './constants';
+import { PLATFORMS } from './constants';
 
 type Platform = typeof PLATFORMS[number];
 

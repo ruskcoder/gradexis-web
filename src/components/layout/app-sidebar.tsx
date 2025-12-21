@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import { sidebarData } from "@/components/layout/sidebar-data"
 import { APP_NAME } from "@/lib/constants"
-import { useCurrentUser, useStore } from '@/lib/store'
+import { useCurrentUser } from '@/lib/store'
 
 function SidebarBrand({ collapsed }: { collapsed: boolean }) {
   const currentUser = useCurrentUser()
@@ -66,9 +66,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { state } = useSidebar()
   const collapsed = state === "collapsed"
-  const currentUser = useCurrentUser();
-
-  return (
+    useCurrentUser();
+    return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader className={"transition-all duration-150 " + (collapsed ? "p-0" : "p-2")}>
         <SidebarBrand collapsed={collapsed} />

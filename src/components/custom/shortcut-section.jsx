@@ -85,7 +85,7 @@ export function ShortcutSection() {
         })
       })
     }
-  }, [user?.id])
+  }, [addShortcut, user, user.id])
 
   const shortcuts = user?.shortcuts || []
 

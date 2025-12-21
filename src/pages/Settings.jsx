@@ -1,7 +1,6 @@
 import React from 'react'
 import { useState, useEffect } from 'react'
 import { useCurrentUser, useStore } from '@/lib/store'
-import { API_URL } from '@/lib/constants'
 import { getColorThemes } from '@/lib/color-themes'
 import { applyColorTheme } from '@/lib/apply-color-theme'
 import { fetchReferralData } from '@/App'

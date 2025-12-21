@@ -3,8 +3,6 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
 import { ProgressCircle } from "@/components/ui/circular-progress"

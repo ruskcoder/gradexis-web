@@ -4,10 +4,7 @@ import { RingGradeStat, CategoryGradeStat, CategoryGradeList } from '@/component
 import { ClassGradesItem, ClassGradesList } from '@/components/custom/grades-item'
 import {
   Card,
-  CardAction,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"

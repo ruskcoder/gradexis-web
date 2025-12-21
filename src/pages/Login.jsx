@@ -3,31 +3,24 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSet,
 } from '@/components/ui/field';
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemDescription,
-  ItemFooter,
   ItemHeader,
-  ItemMedia,
   ItemTitle,
   ItemSubtitle,
   ItemGroup,
-  ItemSeparator,
 } from "@/components/ui/item";
 import { Input } from '@/components/ui/input';
 import '@/assets/css/login.css';
-import Wallpaper from '@/assets/wallpaper.jpg';
-import Logo from '@/assets/img/logo-rounded.png';
+import Wallpaper from '@/assets/wallpaper.jpg'
 import { districts, PLATFORM_MAPPING } from '@/lib/constants';
 import { login } from '@/lib/grades-api';
 import { useStore } from '@/lib/store';
@@ -41,7 +34,7 @@ export default function Login() {
   const [district, setDistrict] = useState(null);
   const [link, setLink] = useState('');
   const [platform, setPlatform] = useState('');
-  const [clsession, setClsession] = useState(null);
+  const [clsession, _setClsession] = useState(null);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [referralCode, setReferralCode] = useState('');
@@ -82,7 +75,7 @@ export default function Login() {
         setCurrentUserIndex(newIndex);
 
         const newUser = useStore.getState().users[newIndex];
-        try { showWebNotificationsForUser(newUser, true) } catch (e) {  }
+        try { showWebNotificationsForUser(newUser, true) } catch (_) {  }
 
         navigate('/dashboard');
       } else {

@@ -45,7 +45,7 @@ export default function Attendance() {
 
   React.useEffect(() => {
     fetchAttendanceForMonth(currentMonth, currentYear);
-  }, []);
+  }, [currentMonth, currentYear, fetchAttendanceForMonth]);
 
   const user = useCurrentUser();
   const showTitle = user ? user.showPageTitles !== false : true;

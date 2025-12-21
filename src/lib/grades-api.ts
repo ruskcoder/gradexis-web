@@ -1,6 +1,6 @@
 import { LOGIN_TYPES, API_URL, API_PLATFORM_ENDPOINTS, LOGIN_ENDPOINT, PLATFORMS, CLASSES_ENDPOINT, ATTENDANCE_ENDPOINT, SCHEDULE_ENDPOINT, TRANSCRIPT_ENDPOINT, REPORT_CARD_ENDPOINT, PROGRESS_REPORT_ENDPOINT, TEACHERS_ENDPOINT } from "@/lib/constants";
 import { pathMerge } from "@/lib/utils";
-import { setSession, currentUser, User, getSession, useStore } from "@/lib/store";
+import { setSession, currentUser, getSession, useStore } from "@/lib/store";
 import { initializeGradesStore, addGradesLoad } from "@/lib/grades-store";
 
 type Platform = typeof PLATFORMS[number];
@@ -26,7 +26,7 @@ export async function login(
   referralCode: string = ''
 ) {
   const session = getSession();
-  let body = {
+  const body = {
     loginType: loginType,
     loginData: loginDetails,
     options: {
@@ -35,7 +35,7 @@ export async function login(
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[platform], LOGIN_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[platform], LOGIN_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -68,7 +68,7 @@ export async function getAttendance(date?: string) {
     return cachedData;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -80,7 +80,7 @@ export async function getAttendance(date?: string) {
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], ATTENDANCE_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], ATTENDANCE_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -118,7 +118,7 @@ export async function* getClasses(term?: string) {
     return;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -131,7 +131,7 @@ export async function* getClasses(term?: string) {
     stream: true
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], CLASSES_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], CLASSES_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -226,7 +226,7 @@ export async function getSchedule() {
     return cachedData;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -238,7 +238,7 @@ export async function getSchedule() {
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], SCHEDULE_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], SCHEDULE_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -273,7 +273,7 @@ export async function getTranscript() {
     return cachedData;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -285,7 +285,7 @@ export async function getTranscript() {
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], TRANSCRIPT_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], TRANSCRIPT_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -320,7 +320,7 @@ export async function getReportCard() {
     return cachedData;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -332,7 +332,7 @@ export async function getReportCard() {
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], REPORT_CARD_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], REPORT_CARD_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -367,7 +367,7 @@ export async function getProgressReport() {
     return cachedData;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -379,7 +379,7 @@ export async function getProgressReport() {
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], PROGRESS_REPORT_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], PROGRESS_REPORT_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -414,7 +414,7 @@ export async function getTeachers() {
     return cachedData;
   }
 
-  let body = {
+  const body = {
     loginType: user.loginType,
     loginData: {
       username: user.username,
@@ -426,7 +426,7 @@ export async function getTeachers() {
     session: session
   }
 
-  let endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], TEACHERS_ENDPOINT);
+  const endpoint = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[user.platform], TEACHERS_ENDPOINT);
 
   const response = await fetch(endpoint, {
     method: "POST",

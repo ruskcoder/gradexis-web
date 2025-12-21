@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useCurrentUser } from '@/lib/store'
 import { getClasses } from '@/lib/grades-api'
-import { getLatestGradesLoad, hasStorageData, getInitialTerm, getTermList, getGradesStore } from '@/lib/grades-store'
+import { getLatestGradesLoad, hasStorageData, getInitialTerm, getTermList } from '@/lib/grades-store'
 import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,12 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Toggle } from '@/components/ui/toggle'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import {
   Select,
   SelectContent,
@@ -38,8 +32,6 @@ export default function FinalExamCalculator() {
   const [selectedClass, setSelectedClass] = React.useState('')
   const [selectedTerms, setSelectedTerms] = React.useState(new Set())
   const [loadingTerms, setLoadingTerms] = React.useState({})
-  const [termGrades, setTermGrades] = React.useState({})
-  const [fetchProgress, setFetchProgress] = React.useState({})
   const [initialClassesData, setInitialClassesData] = React.useState({})
   const [cachedTermData, setCachedTermData] = React.useState({})
 
@@ -128,7 +120,7 @@ export default function FinalExamCalculator() {
     }
 
     fetchInitial()
-  }, [])
+  }, [selectedClass])
 
   const handleFetchData = async () => {
     if (!selectedClass) {

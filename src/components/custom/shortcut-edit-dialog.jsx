@@ -70,7 +70,7 @@ export function ShortcutEditDialog({ open, onOpenChange, shortcut, onSave }) {
         setImage(faviconUrl)
         setImagePreview(faviconUrl)
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Invalid URL. Please enter a valid website URL.')
     } finally {
       setIsLoadingFavicon(false)

@@ -4,16 +4,12 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
-  ItemTitle,
-  ItemGroup,
+  ItemTitle
 } from "@/components/ui/item"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"

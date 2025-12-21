@@ -18,7 +18,6 @@ import { useCurrentUser } from '@/lib/store'
 import { getClasses } from '@/lib/grades-api'
 import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData } from '@/lib/grades-store'
 import { PremiumDialog } from '@/components/custom/premium-dialog'
-import { History } from '@/pages/statistics/History'
 import { ChevronLeft, GitCommitHorizontal } from 'lucide-react'
 
 export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }) {
@@ -91,7 +90,7 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
           }
         }
       }
-    } catch (error) {
+    } catch (_) {
       setLoadingTerms(prev => ({ ...prev, [key]: false }));
     }
   }
