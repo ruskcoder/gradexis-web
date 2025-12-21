@@ -28,6 +28,10 @@ export default function Grades() {
       element = <TimelinePage />;
       pageTitle = 'Timeline';
       break;
+    case '/statistics/timetravel':
+      element = <GradesView timeTravel={true} />;
+      pageTitle = 'TimeTravel';
+      break;
     default:
       element = <GradesView />;
       pageTitle = 'Grades';

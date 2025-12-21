@@ -21,43 +21,39 @@ export const History = ({ selectedGrade, term }) => {
     if (!selectedGrade || !currentUser || !term) return null;
 
     const gradesStore = currentUser.gradesStore || {};
-    const termHistory = gradesStore.history?.[term] || [];
+    const termHistory = gradesStore.history?.[term] || {};
+    
+    const courseKey = `${selectedGrade.course}|${selectedGrade.name}`;
+    const courseHistory = termHistory[courseKey] || [];
 
-    if (termHistory.length === 0) return null;
+    if (courseHistory.length === 0) return null;
 
-    const courseHistory = [];
-    for (const load of termHistory) {
-      const courseData = load.classes?.find(
-        (c) => c.name === selectedGrade.name && c.course === selectedGrade.course
-      );
+    const historyList = courseHistory.map((entry) => {
+      const loadDate = new Date(entry.loadedAt).toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }).replace(/,/, '');
 
-      if (courseData) {
-        const loadDate = new Date(load.loadedAt).toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        }).replace(/,/, '');
+      const dataPoint = {
+        time: loadDate,
+        timestamp: entry.loadedAt,
+        Average: parseFloat(entry.average) || 0,
+      };
 
-        const dataPoint = {
-          time: loadDate,
-          timestamp: load.loadedAt,
-          Average: parseFloat(courseData.average) || 0,
-        };
-
-        if (courseData.categories) {
-          Object.entries(courseData.categories).forEach(([categoryName, categoryData]) => {
-            dataPoint[categoryName] = parseFloat(categoryData.percent) || 0;
-          });
-        }
-
-        courseHistory.push(dataPoint);
+      if (entry.categories) {
+        Object.entries(entry.categories).forEach(([categoryName, categoryData]) => {
+          dataPoint[categoryName] = parseFloat(categoryData.percent) || 0;
+        });
       }
-    }
 
-    return courseHistory;
+      return dataPoint;
+    });
+
+    return historyList;
   }, [selectedGrade, currentUser, term]);
 
   if (!historyData || historyData.length === 0) {

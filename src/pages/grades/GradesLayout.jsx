@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Progress } from "@/components/ui/progress"
 import { GradesItem, GradesList } from '@/components/custom/grades-item'
 import {
@@ -19,6 +19,7 @@ import { getClasses } from '@/lib/grades-api'
 import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData } from '@/lib/grades-store'
 import { PremiumDialog } from '@/components/custom/premium-dialog'
 import { History } from '@/pages/statistics/History'
+import { ChevronLeft, GitCommitHorizontal } from 'lucide-react'
 
 export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }) {
   const [terms, setTerms] = useState([]);
@@ -33,9 +34,12 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
 
   const user = useCurrentUser();
   const location = useLocation();
+  const navigate = useNavigate();
   const abortControllerRef = useRef({});
   const userHasSelectedTermRef = useRef(false);
   const isWhatIfMode = location.pathname === '/grades/whatif';
+  const isTimeTravelMode = location.pathname === '/statistics/timetravel';
+  const isTimelineMode = location.pathname === '/statistics/timeline';
 
   async function fetchClasses(term = null, { initial = false } = {}) {
     const key = initial ? 'initial' : term;
@@ -120,7 +124,6 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
 
     if (latestLoad) {
       if (isInitialLoad) {
-
         const storedTermList = getTermList();
         setTerms(storedTermList);
         setCurrentTerm(termToLoad);
@@ -129,7 +132,6 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
         setStorageMode(prev => ({ ...prev, [termToLoad]: true }));
         setLastLoadedDate(prev => ({ ...prev, [termToLoad]: new Date(latestLoad.loadedAt) }));
       } else {
-
         setClassesDataByTerm(prev => ({ ...prev, [termToLoad]: latestLoad.classes }));
         setLoadingTerms(prev => ({ ...prev, [termToLoad]: false }));
         setStorageMode(prev => ({ ...prev, [termToLoad]: true }));
@@ -147,6 +149,29 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
+  };
+
+  const handleViewLatestInTimeTravel = () => {
+    if (!selectedGrade || !currentTerm) return;
+
+    const gradesStore = user?.gradesStore || {};
+    const termHistory = gradesStore.history?.[currentTerm] || {};
+    const courseKey = `${selectedGrade.course}|${selectedGrade.name}`;
+    const courseHistory = termHistory[courseKey] || [];
+
+    if (courseHistory.length === 0) return;
+
+    // Latest index is the last entry in the course history
+    const latestIndex = courseHistory.length - 1;
+
+    navigate('/statistics/timetravel', {
+      state: {
+        selectedGrade,
+        term: currentTerm,
+        historyIndex: latestIndex,
+        from: 'timeline'
+      }
+    });
   };
 
   return (
@@ -174,10 +199,10 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                 {(loadingTerms[currentTerm] || loadingTerms.initial) && <div className='flex flex-col items-center justify-center'>
                   <div className='w-full text-center my-2'>{progressByTerm[currentTerm]?.message || progressByTerm.initial?.message}</div>
                   <Progress value={progressByTerm[currentTerm]?.percent || progressByTerm.initial?.percent || 0} />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-3" 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
                     onClick={handleLoadFromStorage}
                     disabled={!hasStorageData(loadingTerms.initial ? getInitialTerm() : currentTerm)}
                   >
@@ -198,8 +223,8 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                     ) : (
                       <GradesList variant={user.gradesView}>
                         {classesDataByTerm[currentTerm].map((course, index) => (
-                          <div 
-                            key={index} 
+                          <div
+                            key={index}
                             onClick={() => course.average && setSelectedGrade(course)}
                           >
                             <GradesItem
@@ -218,14 +243,42 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel className='bg-card rounded-xl border flex flex-col min-w-[412px]'>
-            <div className='flex items-center justify-between py-2 px-6 border-b'>
+            <div className='flex items-center justify-between py-2 px-2 border-b'>
+              {isTimeTravelMode &&
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className='h-7 w-7 p-0'
+                  onClick={() => navigate('/statistics/timeline')}
+                  title="Go to Timeline"
+                >
+                  <ChevronLeft size={18} />
+                </Button>
+              }
+              {isTimelineMode && selectedGrade &&
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className='h-7 w-7 p-0'
+                  onClick={handleViewLatestInTimeTravel}
+                  title="View in TimeTravel"
+                >
+                  <GitCommitHorizontal size={18} />
+                </Button>
+              }
               <div className='text-center text-sm font-medium text-muted-foreground flex-1 py-1'>
                 {selectedGrade ? selectedGrade.name : 'Grade Details'}
               </div>
+              {isTimeTravelMode ? (
+                <div className="w-7"></div>
+              ) : null}
+              {isTimelineMode && selectedGrade ? (
+                <div className="w-7"></div>
+              ) : null}
             </div>
             <div className='p-6 flex-1 overflow-y-auto'>
-              <PremiumDialog 
-                open={showPremiumDialog} 
+              <PremiumDialog
+                open={showPremiumDialog}
                 onOpenChange={setShowPremiumDialog}
               />
               {!selectedGrade ? (

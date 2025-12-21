@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Timeline, TimelineItem } from '@/components/timeline';
-import { TrendingUp, TrendingDown, GraduationCap } from 'lucide-react';
+import { TrendingUp, TrendingDown, SquareArrowOutUpRight } from 'lucide-react';
 import {
   Item,
   ItemActions,
@@ -14,99 +15,90 @@ import { useCurrentUser } from '@/lib/store';
 
 export const TimelinePage = ({ selectedGrade, term }) => {
   const currentUser = useCurrentUser();
+  const navigate = useNavigate();
 
-  const timelineEvents = useMemo(() => {
-    if (!selectedGrade || !currentUser || !term) return [];
+  const { events: timelineEvents, courseHistory } = useMemo(() => {
+    if (!selectedGrade || !currentUser || !term) return { events: [], courseHistory: [] };
 
     const gradesStore = currentUser.gradesStore || {};
-    const termHistory = gradesStore.history?.[term] || [];
+    const termHistory = gradesStore.history?.[term] || {};
+    
+    const courseKey = `${selectedGrade.course}|${selectedGrade.name}`;
+    const courseHistory = termHistory[courseKey] || [];
 
-    if (termHistory.length === 0) return [];
+    if (courseHistory.length === 0) return { events: [], courseHistory: [] };
 
     const events = [];
 
-    const firstLoad = termHistory[0];
-    const firstCourse = firstLoad.classes?.find(
-      (c) => c.name === selectedGrade.name && c.course === selectedGrade.course
-    );
-
-    if (firstCourse) {
+    // Handle first entry as initial state
+    if (courseHistory.length > 0) {
+      const firstEntry = courseHistory[0];
       const changes = {};
-      changes.average = { prev: 0, curr: parseFloat(firstCourse.average) || 0, change: parseFloat(firstCourse.average) || 0 };
-
-      const categories = Object.keys(firstCourse.categories || {});
+      changes.average = { prev: 0, curr: parseFloat(firstEntry.average) || 0, change: parseFloat(firstEntry.average) || 0 };
+      
+      const categories = Object.keys(firstEntry.categories || {});
       for (const category of categories) {
-        const currPercent = parseFloat(firstCourse.categories?.[category]?.percent) || 0;
+        const currPercent = parseFloat(firstEntry.categories?.[category]?.percent) || 0;
         changes[category] = { prev: 0, curr: currPercent, change: currPercent };
       }
 
-      const changedAssignments = firstCourse.scores || [];
+      const changedAssignments = firstEntry.scores || [];
 
       events.push({
-        date: new Date(firstLoad.loadedAt),
+        date: new Date(firstEntry.loadedAt),
         changes,
         changedAssignments,
       });
     }
 
-    for (let i = 1; i < termHistory.length; i++) {
-      const prevLoad = termHistory[i - 1];
-      const currentLoad = termHistory[i];
-
-      const prevCourse = prevLoad.classes?.find(
-        (c) => c.name === selectedGrade.name && c.course === selectedGrade.course
-      );
-      const currCourse = currentLoad.classes?.find(
-        (c) => c.name === selectedGrade.name && c.course === selectedGrade.course
-      );
-
-      if (!prevCourse || !currCourse) continue;
+    // Compare consecutive entries
+    for (let i = 1; i < courseHistory.length; i++) {
+      const prevEntry = courseHistory[i - 1];
+      const currEntry = courseHistory[i];
 
       const changes = {};
       let hasChanges = false;
 
-      const prevAvg = parseFloat(prevCourse.average) || 0;
-      const currAvg = parseFloat(currCourse.average) || 0;
+      const prevAvg = parseFloat(prevEntry.average) || 0;
+      const currAvg = parseFloat(currEntry.average) || 0;
       if (prevAvg !== currAvg) {
         changes.average = { prev: prevAvg, curr: currAvg, change: currAvg - prevAvg };
         hasChanges = true;
       }
 
-      const categories = Object.keys(currCourse.categories || {});
+      const categories = Object.keys(currEntry.categories || {});
       for (const category of categories) {
-        const prevPercent = parseFloat(prevCourse.categories?.[category]?.percent) || 0;
-        const currPercent = parseFloat(currCourse.categories?.[category]?.percent) || 0;
+        const prevPercent = parseFloat(prevEntry.categories?.[category]?.percent) || 0;
+        const currPercent = parseFloat(currEntry.categories?.[category]?.percent) || 0;
         if (prevPercent !== currPercent) {
           changes[category] = { prev: prevPercent, curr: currPercent, change: currPercent - prevPercent };
           hasChanges = true;
         }
       }
 
-      const prevScores = prevCourse.scores || [];
-      const currScores = currCourse.scores || [];
+      const prevScores = prevEntry.scores || [];
+      const currScores = currEntry.scores || [];
       const changedAssignments = [];
 
       for (const currScore of currScores) {
         const prevScore = prevScores.find(s => s.name === currScore.name);
         if (!prevScore) {
-
           changedAssignments.push(currScore);
         } else if (prevScore.score !== currScore.score || prevScore.percentage !== currScore.percentage) {
-
           changedAssignments.push(currScore);
         }
       }
 
       if (hasChanges || changedAssignments.length > 0) {
         events.push({
-          date: new Date(currentLoad.loadedAt),
+          date: new Date(currEntry.loadedAt),
           changes: hasChanges ? changes : {},
           changedAssignments,
         });
       }
     }
 
-    return events;
+    return { events, courseHistory };
   }, [selectedGrade, currentUser, term]);
 
   const ChangeBadge = ({ change }) => {
@@ -184,6 +176,18 @@ export const TimelinePage = ({ selectedGrade, term }) => {
           const isLatest = idx === 0;
           const isInitial = idx === arr.length - 1;
           const title = isLatest ? 'Latest Load' : isInitial ? 'Initial Load' : 'Grade Updated';
+          
+          const handleIconClick = () => {
+            navigate('/statistics/timetravel', { 
+              state: { 
+                selectedGrade,
+                term,
+                historyIndex: courseHistory.findIndex(entry => entry.loadedAt === event.date.getTime()),
+                from: 'timeline'
+              } 
+            });
+          };
+
           return (
           <TimelineItem
             key={idx}
@@ -237,7 +241,15 @@ export const TimelinePage = ({ selectedGrade, term }) => {
                 )}
               </div>
             }
-            icon={<GraduationCap className="w-4 h-4" />}
+            icon={
+              <button
+                onClick={handleIconClick}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                title="View in TimeTravel"
+              >
+                <SquareArrowOutUpRight className="w-4 h-4" />
+              </button>
+            }
           />
           );
         })}

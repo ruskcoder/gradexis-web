@@ -58,7 +58,7 @@ export interface User {
   gradesStore: {
     initialTerm: string;
     termList: string[];
-    history: Record<string, Array<{ loadedAt: number; classes: any[] }>>;
+    history: Record<string, Record<string, Array<{ loadedAt: number; average: any; categories: any; scores: any[] }>>>;
   };
 }
 
@@ -334,34 +334,49 @@ export const useStore = create<UserStore>()(
             const currentUser = newUsers[state.currentUserIndex]!;
             const newHistory = { ...currentUser.gradesStore.history };
             if (!newHistory[term]) {
-              newHistory[term] = [];
+              newHistory[term] = {};
             } else {
-              newHistory[term] = [...newHistory[term]];
+              newHistory[term] = { ...newHistory[term] };
             }
-            
-            if (newHistory[term].length > 0) {
-              const latestLoad = newHistory[term][newHistory[term].length - 1];
-              if (JSON.stringify(latestLoad.classes) === JSON.stringify(classes)) {
-                newHistory[term][newHistory[term].length - 1] = {
-                  ...latestLoad,
-                  loadedAt: Date.now(),
-                };
-                newUsers[state.currentUserIndex] = {
-                  ...currentUser,
-                  gradesStore: {
-                    initialTerm,
-                    termList,
-                    history: newHistory,
-                  },
-                } as User;
-                return { users: newUsers };
+
+            // For each class, check if it changed and add to history
+            for (const classData of classes) {
+              const courseKey = `${classData.course}|${classData.name}`;
+              if (!newHistory[term][courseKey]) {
+                newHistory[term][courseKey] = [];
+              } else {
+                newHistory[term][courseKey] = [...newHistory[term][courseKey]];
               }
+
+              const courseHistory = newHistory[term][courseKey];
+              if (courseHistory.length > 0) {
+                const latestEntry = courseHistory[courseHistory.length - 1];
+                // Compare only the data that matters (not loadedAt)
+                if (
+                  JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
+                  JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
+                  JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
+                ) {
+                  // Update timestamp instead of creating duplicate
+                  courseHistory[courseHistory.length - 1] = {
+                    loadedAt: Date.now(),
+                    average: classData.average,
+                    categories: classData.categories,
+                    scores: classData.scores,
+                  };
+                  continue;
+                }
+              }
+
+              // Add new entry
+              courseHistory.push({
+                loadedAt: Date.now(),
+                average: classData.average,
+                categories: classData.categories,
+                scores: classData.scores,
+              });
             }
-            
-            newHistory[term].push({
-              loadedAt: Date.now(),
-              classes,
-            });
+
             newUsers[state.currentUserIndex] = {
               ...currentUser,
               gradesStore: {
@@ -382,35 +397,49 @@ export const useStore = create<UserStore>()(
             const currentUser = newUsers[state.currentUserIndex]!;
             const newHistory = { ...currentUser.gradesStore.history };
             if (!newHistory[term]) {
-              newHistory[term] = [];
+              newHistory[term] = {};
             } else {
-              newHistory[term] = [...newHistory[term]];
+              newHistory[term] = { ...newHistory[term] };
             }
-            
-            // Check if the latest load has identical classes
-            if (newHistory[term].length > 0) {
-              const latestLoad = newHistory[term][newHistory[term].length - 1];
-              if (JSON.stringify(latestLoad.classes) === JSON.stringify(classes)) {
-                // Update timestamp instead of adding duplicate
-                newHistory[term][newHistory[term].length - 1] = {
-                  ...latestLoad,
-                  loadedAt: Date.now(),
-                };
-                newUsers[state.currentUserIndex] = {
-                  ...currentUser,
-                  gradesStore: {
-                    ...currentUser.gradesStore,
-                    history: newHistory,
-                  },
-                } as User;
-                return { users: newUsers };
+
+            // For each class, check if it changed and add to history
+            for (const classData of classes) {
+              const courseKey = `${classData.course}|${classData.name}`;
+              if (!newHistory[term][courseKey]) {
+                newHistory[term][courseKey] = [];
+              } else {
+                newHistory[term][courseKey] = [...newHistory[term][courseKey]];
               }
+
+              const courseHistory = newHistory[term][courseKey];
+              if (courseHistory.length > 0) {
+                const latestEntry = courseHistory[courseHistory.length - 1];
+                // Compare only the data that matters (not loadedAt)
+                if (
+                  JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
+                  JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
+                  JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
+                ) {
+                  // Update timestamp instead of creating duplicate
+                  courseHistory[courseHistory.length - 1] = {
+                    loadedAt: Date.now(),
+                    average: classData.average,
+                    categories: classData.categories,
+                    scores: classData.scores,
+                  };
+                  continue;
+                }
+              }
+
+              // Add new entry
+              courseHistory.push({
+                loadedAt: Date.now(),
+                average: classData.average,
+                categories: classData.categories,
+                scores: classData.scores,
+              });
             }
-            
-            newHistory[term].push({
-              loadedAt: Date.now(),
-              classes,
-            });
+
             newUsers[state.currentUserIndex] = {
               ...currentUser,
               gradesStore: {
@@ -429,13 +458,18 @@ export const useStore = create<UserStore>()(
           if (newUsers[state.currentUserIndex]) {
             const currentUser = newUsers[state.currentUserIndex]!;
             const newHistory = { ...currentUser.gradesStore.history };
-            if (newHistory[term] && newHistory[term].length > 0) {
-              newHistory[term] = [...newHistory[term]];
-              const latestIndex = newHistory[term].length - 1;
-              newHistory[term][latestIndex] = {
-                ...newHistory[term][latestIndex],
-                loadedAt: Date.now(),
-              };
+            if (newHistory[term]) {
+              newHistory[term] = { ...newHistory[term] };
+              // Update loadedAt for all courses in this term
+              for (const courseKey in newHistory[term]) {
+                const courseHistory = newHistory[term][courseKey];
+                if (courseHistory.length > 0) {
+                  courseHistory[courseHistory.length - 1] = {
+                    ...courseHistory[courseHistory.length - 1],
+                    loadedAt: Date.now(),
+                  };
+                }
+              }
               newUsers[state.currentUserIndex] = {
                 ...currentUser,
                 gradesStore: {

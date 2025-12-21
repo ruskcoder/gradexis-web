@@ -8,7 +8,7 @@ export interface GradesLoad {
 export interface GradesStore {
   initialTerm: string;
   termList: string[];
-  history: Record<string, GradesLoad[]>;
+  history: Record<string, Record<string, Array<{ loadedAt: number; average: any; categories: any; scores: any[] }>>>;
 }
 
 export function initializeGradesStore(
@@ -21,49 +21,126 @@ export function initializeGradesStore(
 }
 
 export function addGradesLoad(term: string, classes: any[]): void {
-  const gradesStore = useStore.getState().getGradesStore();
-  const termHistory = gradesStore.history[term];
-
-  if (termHistory && termHistory.length > 0) {
-    const latestLoad = termHistory[termHistory.length - 1];
-    if (classesAreEqual(latestLoad.classes, classes)) {
-
-      useStore.getState().updateLatestGradesLoadTime(term);
-      return;
-    }
-  }
-
   useStore.getState().addGradesStoreLoad(term, classes);
 }
 
-function classesAreEqual(classes1: any[], classes2: any[]): boolean {
-  if (classes1.length !== classes2.length) {
-    return false;
+export function reconstructClassesFromHistory(term: string): any[] {
+  const gradesStore = useStore.getState().getGradesStore();
+  const termHistory = gradesStore.history[term];
+
+  if (!termHistory) {
+    return [];
   }
-  return JSON.stringify(classes1) === JSON.stringify(classes2);
+
+  const classes: any[] = [];
+
+  // For each course in the history
+  for (const courseKey in termHistory) {
+    const courseHistory = termHistory[courseKey];
+    if (courseHistory.length === 0) continue;
+
+    // Get the latest entry for this course
+    const latestEntry = courseHistory[courseHistory.length - 1];
+    const [course, name] = courseKey.split('|');
+
+    // Reconstruct the class object
+    classes.push({
+      course,
+      name,
+      average: latestEntry.average,
+      categories: latestEntry.categories,
+      scores: latestEntry.scores,
+    });
+  }
+
+  return classes;
 }
 
 export function getLatestGradesLoad(term: string): GradesLoad | null {
   const gradesStore = useStore.getState().getGradesStore();
   const termHistory = gradesStore.history[term];
 
-  if (!termHistory || termHistory.length === 0) {
+  if (!termHistory) {
     return null;
   }
 
-  const latestLoad = termHistory[termHistory.length - 1];
-  return latestLoad ?? null;
+  // Find the latest loadedAt across all courses
+  let latestLoadedAt = 0;
+  for (const courseKey in termHistory) {
+    const courseHistory = termHistory[courseKey];
+    if (courseHistory.length > 0) {
+      const latestEntry = courseHistory[courseHistory.length - 1];
+      if (latestEntry.loadedAt > latestLoadedAt) {
+        latestLoadedAt = latestEntry.loadedAt;
+      }
+    }
+  }
+
+  if (latestLoadedAt === 0) {
+    return null;
+  }
+
+  // Reconstruct classes array with the latest data
+  const classes = reconstructClassesFromHistory(term);
+
+  return {
+    loadedAt: latestLoadedAt,
+    classes,
+  };
 }
 
 export function getGradesLoadHistory(term: string): GradesLoad[] {
+  // This function is deprecated with the new structure
+  // but keeping for backward compatibility
   const gradesStore = useStore.getState().getGradesStore();
-  return gradesStore.history[term] || [];
+  const termHistory = gradesStore.history[term];
+  
+  if (!termHistory) {
+    return [];
+  }
+
+  // Reconstruct history array from per-course history
+  const loads: GradesLoad[] = [];
+  const allLoadTimestamps = new Set<number>();
+
+  for (const courseKey in termHistory) {
+    const courseHistory = termHistory[courseKey];
+    for (const entry of courseHistory) {
+      allLoadTimestamps.add(entry.loadedAt);
+    }
+  }
+
+  const sortedTimestamps = Array.from(allLoadTimestamps).sort((a, b) => a - b);
+
+  for (const timestamp of sortedTimestamps) {
+    const classesAtTime: any[] = [];
+    for (const courseKey in termHistory) {
+      const courseHistory = termHistory[courseKey];
+      const entryAtTime = courseHistory.find(e => e.loadedAt === timestamp);
+      if (entryAtTime) {
+        const [course, name] = courseKey.split('|');
+        classesAtTime.push({
+          course,
+          name,
+          average: entryAtTime.average,
+          categories: entryAtTime.categories,
+          scores: entryAtTime.scores,
+        });
+      }
+    }
+    loads.push({
+      loadedAt: timestamp,
+      classes: classesAtTime,
+    });
+  }
+
+  return loads;
 }
 
 export function hasStorageData(term: string): boolean {
   const gradesStore = useStore.getState().getGradesStore();
   const termHistory = gradesStore.history[term];
-  return !!(termHistory && termHistory.length > 0);
+  return !!(termHistory && Object.keys(termHistory).length > 0);
 }
 
 export function getInitialTerm(): string {
