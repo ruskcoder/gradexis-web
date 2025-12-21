@@ -28,7 +28,6 @@ export interface Shortcut {
   image: string;
 }
 
-
 export interface User {
   loginType: '' | 'credentials' | 'classlink';
   username: string;
@@ -339,7 +338,6 @@ export const useStore = create<UserStore>()(
               newHistory[term] = { ...newHistory[term] };
             }
 
-            // For each class, check if it changed and add to history
             for (const classData of classes) {
               const courseKey = `${classData.course}|${classData.name}`;
               if (!newHistory[term][courseKey]) {
@@ -349,15 +347,15 @@ export const useStore = create<UserStore>()(
               }
 
               const courseHistory = newHistory[term][courseKey];
-              if (courseHistory.length > 0) {
+              if (courseHistory && courseHistory.length > 0) {
                 const latestEntry = courseHistory[courseHistory.length - 1];
-                // Compare only the data that matters (not loadedAt)
                 if (
+                  latestEntry &&
                   JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
                   JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
                   JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
                 ) {
-                  // Update timestamp instead of creating duplicate
+
                   courseHistory[courseHistory.length - 1] = {
                     loadedAt: Date.now(),
                     average: classData.average,
@@ -368,13 +366,14 @@ export const useStore = create<UserStore>()(
                 }
               }
 
-              // Add new entry
-              courseHistory.push({
-                loadedAt: Date.now(),
-                average: classData.average,
-                categories: classData.categories,
-                scores: classData.scores,
-              });
+              if (courseHistory) {
+                courseHistory.push({
+                  loadedAt: Date.now(),
+                  average: classData.average,
+                  categories: classData.categories,
+                  scores: classData.scores,
+                });
+              }
             }
 
             newUsers[state.currentUserIndex] = {
@@ -402,7 +401,6 @@ export const useStore = create<UserStore>()(
               newHistory[term] = { ...newHistory[term] };
             }
 
-            // For each class, check if it changed and add to history
             for (const classData of classes) {
               const courseKey = `${classData.course}|${classData.name}`;
               if (!newHistory[term][courseKey]) {
@@ -412,15 +410,16 @@ export const useStore = create<UserStore>()(
               }
 
               const courseHistory = newHistory[term][courseKey];
-              if (courseHistory.length > 0) {
+              if (courseHistory && courseHistory.length > 0) {
                 const latestEntry = courseHistory[courseHistory.length - 1];
-                // Compare only the data that matters (not loadedAt)
+
                 if (
+                  latestEntry &&
                   JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
                   JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
                   JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
                 ) {
-                  // Update timestamp instead of creating duplicate
+
                   courseHistory[courseHistory.length - 1] = {
                     loadedAt: Date.now(),
                     average: classData.average,
@@ -431,13 +430,14 @@ export const useStore = create<UserStore>()(
                 }
               }
 
-              // Add new entry
-              courseHistory.push({
-                loadedAt: Date.now(),
-                average: classData.average,
-                categories: classData.categories,
-                scores: classData.scores,
-              });
+              if (courseHistory) {
+                courseHistory.push({
+                  loadedAt: Date.now(),
+                  average: classData.average,
+                  categories: classData.categories,
+                  scores: classData.scores,
+                });
+              }
             }
 
             newUsers[state.currentUserIndex] = {
@@ -460,14 +460,19 @@ export const useStore = create<UserStore>()(
             const newHistory = { ...currentUser.gradesStore.history };
             if (newHistory[term]) {
               newHistory[term] = { ...newHistory[term] };
-              // Update loadedAt for all courses in this term
+
               for (const courseKey in newHistory[term]) {
                 const courseHistory = newHistory[term][courseKey];
-                if (courseHistory.length > 0) {
-                  courseHistory[courseHistory.length - 1] = {
-                    ...courseHistory[courseHistory.length - 1],
-                    loadedAt: Date.now(),
-                  };
+                if (courseHistory && courseHistory.length > 0) {
+                  const latestEntry = courseHistory[courseHistory.length - 1];
+                  if (latestEntry) {
+                    courseHistory[courseHistory.length - 1] = {
+                      loadedAt: Date.now(),
+                      average: latestEntry.average,
+                      categories: latestEntry.categories,
+                      scores: latestEntry.scores,
+                    };
+                  }
                 }
               }
               newUsers[state.currentUserIndex] = {
@@ -489,13 +494,21 @@ export const useStore = create<UserStore>()(
           return {
             initialTerm: '',
             termList: [],
-            history: {},
+            history: {} as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
           };
         }
-        return users[currentUserIndex]?.gradesStore || {
-          initialTerm: '',
-          termList: [],
-          history: {},
+        const store = users[currentUserIndex]?.gradesStore;
+        if (!store) {
+          return {
+            initialTerm: '',
+            termList: [],
+            history: {} as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
+          };
+        }
+        return {
+          initialTerm: store.initialTerm,
+          termList: store.termList,
+          history: store.history as unknown as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
         };
       },
 
@@ -579,3 +592,4 @@ export const getSession = () => {
 export const setSession = (session: Partial<Session>) => {
   useStore.getState().setSession(session);
 };
+

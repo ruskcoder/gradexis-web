@@ -32,7 +32,6 @@ export function GradesView({ selectedGrade, timeTravel = false, term }) {
     setHistoryIndex(0)
   }, [selectedGrade])
 
-  // Set history index from location state when navigating from Timeline
   useEffect(() => {
     if (timeTravel && location.state?.historyIndex !== undefined) {
       setHistoryIndex(location.state.historyIndex)

@@ -176,6 +176,7 @@ export default function App() {
           <Route path="/statistics/history" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
           <Route path="/statistics/timeline" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
           <Route path="/statistics/timetravel" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/statistics/impacts" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/academics/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
           <Route path="/academics/schedules" element={<ProtectedRoute><Schedules /></ProtectedRoute>} />

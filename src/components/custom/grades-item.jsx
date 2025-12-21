@@ -109,7 +109,7 @@ export function GradesItem({ courseName, id, grade, variant }) {
       </CardContent>
     </Card>
   ) : (
-    <Item variant="outline" className="p-2 max-w-[500px] min-w-[250px] cursor-pointer hover:bg-accent transition-colors">
+    <Item variant="outline" className="p-2 min-w-[250px] cursor-pointer hover:bg-accent transition-colors">
       <div className="flex w-full items-center justify-between">
         <ItemContent className="gap-0 ml-1 mr-3 min-w-0">
           <ItemTitle className="text-base font-semibold truncate block">{courseName}</ItemTitle>
@@ -139,7 +139,7 @@ export function ClassGradesList({ children }) {
   )
 }
 
-export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditPercentage }) {
+export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditPercentage, impactBadge }) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
   const initialEditingValue = (() => {
@@ -216,7 +216,16 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
                 {date}
               </ItemDescription>
             </ItemContent>
-            <ItemActions className="flex-shrink-0">
+            <ItemActions className="flex-shrink-0 flex items-center gap-2">
+              {impactBadge !== undefined && (
+                <Badge className={`px-2 py-1 font-semibold text-md ${
+                  impactBadge > 0
+                    ? 'bg-green-600'
+                    : 'bg-red-600'
+                }`}>
+                  {impactBadge > 0 ? '+' : ''}{impactBadge.toFixed(2)}
+                </Badge>
+              )}
               <span className={`block font-semibold tracking-wide text-[1.35rem] text-white text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] min-w-[76px] ${gradeColor} ${scoreData.badges.includes('dropped') || scoreData.excluded ? 'line-through' : ''}`}>
                 {grade}
               </span>
