@@ -22,6 +22,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { PremiumDialog } from '@/components/custom/premium-dialog'
+import { X } from 'lucide-react'
 
 export default function FinalExamCalculator() {
 
@@ -135,7 +136,7 @@ export default function FinalExamCalculator() {
       return
     }
 
-    setCalculateError('') 
+    setCalculateError('')
 
     for (const term of termsToFetch) {
       try {
@@ -396,13 +397,13 @@ export default function FinalExamCalculator() {
       <PremiumDialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog} />
 
       <ResizablePanelGroup direction="horizontal" className="space-x-2">
-        {}
+        { }
         <ResizablePanel className="relative bg-card rounded-xl border flex flex-col min-w-[400px]">
           {loadingInitial && (
             <div className="absolute inset-0 bg-card/85 flex flex-col items-center justify-center z-50 rounded-xl gap-3">
               <Spinner className="size-8" />
               {hasInitialStorageData && (
-                <Button 
+                <Button
                   onClick={handleUseStoredInitial}
                   variant="outline"
                   size="sm"
@@ -479,8 +480,8 @@ export default function FinalExamCalculator() {
               <Button onClick={handleFetchData} className="flex-1">
                 Fetch Data
               </Button>
-              <Button 
-                onClick={handleUseStored}  
+              <Button
+                onClick={handleUseStored}
                 variant="outline"
                 className="flex-1"
                 disabled={!allTermsHaveStorage}
@@ -521,7 +522,7 @@ export default function FinalExamCalculator() {
 
         <ResizableHandle className="bg-border hover:bg-accent/50" />
 
-        {}
+        { }
         <ResizablePanel className="relative bg-card rounded-xl border flex flex-col min-w-[400px]">
           {loadingInitial && (
             <div className="absolute inset-0 bg-card/85 flex items-center justify-center z-50 rounded-xl">
@@ -585,18 +586,28 @@ export default function FinalExamCalculator() {
             <div className="flex gap-3">
               <div className="flex-1 space-y-2">
                 <Label htmlFor="finalExamGrade">Final Exam Grade</Label>
-                <Input
-                  id="finalExamGrade"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={finalExamGrade}
-                  onChange={(e) => setFinalExamGrade(e.target.value)}
-                  placeholder="Final exam grade"
-                  autoFocus={calculatedField === 'finalExam'}
-                  disabled={isExempting}
-                />
+                <div className="relative">
+                  <Input
+                    id="finalExamGrade"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={finalExamGrade}
+                    onChange={(e) => setFinalExamGrade(e.target.value)}
+                    placeholder="Final exam grade"
+                    autoFocus={calculatedField === 'finalExam'}
+                    disabled={isExempting}
+                  />
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='text-muted-foreground focus-visible:ring-ring/50 absolute inset-y-0 right-0 rounded-l-none hover:bg-transparent'
+                    onClick={() => setFinalExamGrade('')}
+                  >
+                    <X />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2" style={{ width: '30%' }}>
                 <Label htmlFor="finalExamWeight">Weight (%)</Label>
@@ -618,17 +629,27 @@ export default function FinalExamCalculator() {
             <div className="space-y-2">
               <Label htmlFor="desiredAverage">Semester Average</Label>
               <div className="flex gap-2">
-                <Input
-                  id="desiredAverage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={desiredAverage}
-                  onChange={(e) => setDesiredAverage(e.target.value)}
-                  placeholder="Semester average"
-                  autoFocus={calculatedField === 'desired'}
-                />
+                <div className="relative flex-1">
+                  <Input
+                    id="desiredAverage"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={desiredAverage}
+                    onChange={(e) => setDesiredAverage(e.target.value)}
+                    placeholder="Semester average"
+                    autoFocus={calculatedField === 'desired'}
+                  />
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='text-muted-foreground focus-visible:ring-ring/50 absolute inset-y-0 right-0 rounded-l-none hover:bg-transparent'
+                    onClick={() => setDesiredAverage('')}
+                  >
+                    <X />
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setDesiredAverage('89.5')}
