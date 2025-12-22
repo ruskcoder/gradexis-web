@@ -217,7 +217,9 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
                 <Badge className={`px-2 py-1 font-semibold text-md ${
                   impactBadge > 0
                     ? 'bg-green-600'
-                    : 'bg-red-600'
+                    : impactBadge < 0
+                    ? 'bg-red-600'
+                    : 'bg-gray-600'
                 }`}>
                   {impactBadge > 0 ? '+' : ''}{impactBadge.toFixed(2)}
                 </Badge>

@@ -107,6 +107,15 @@ export const ImpactsPage = ({ selectedGrade, term }) => {
     const originalAverage = parseFloat(selectedGrade.average) || 0
 
     return originalScores.map((score, idx) => {
+      const isDropped = score.badges && score.badges.includes('dropped')
+      const isExcluded = score.excluded
+
+      if (isDropped || isExcluded) {
+        return {
+          ...score,
+          impactBadge: 0,
+        }
+      }
 
       const scoresWithoutThis = originalScores.filter((_, i) => i !== idx)
 
