@@ -142,7 +142,7 @@ export default function App() {
     } catch (_e) {
       // 
     }
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => {
     if (!currentUser?.colorTheme) return;
