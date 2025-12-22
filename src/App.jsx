@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import MainLayout from '@/components/layout/MainLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Grades from './pages/Grades';
+import Grades from './pages/grades/Grades';
 import Settings from './pages/Settings';
 import Attendance from './pages/academics/Attendance';
 import Schedules from './pages/academics/Schedules';
@@ -19,13 +19,13 @@ import FinalExamCalculator from './pages/calculators/FinalExam';
 import GPARankCalculator from './pages/calculators/GPA-Rank';
 import { useStore } from '@/lib/store';
 import { useCurrentUser } from '@/lib/store';
-import { login } from '@/lib/grades-api';
 import { toast } from "sonner"
 import { Toaster } from '@/components/ui/sonner';
 import { API_URL } from '@/lib/constants';
 import { Megaphone } from 'lucide-react';
 import { applyColorTheme } from '@/lib/apply-color-theme';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export async function fetchReferralData(user, changeUserData, {
   setReferralCode,
   setReferralStatus,
@@ -73,6 +73,7 @@ export async function fetchReferralData(user, changeUserData, {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export async function showWebNotificationsForUser(currentUser, loggingIn = false) {
   if (!currentUser) return
 
@@ -97,7 +98,7 @@ export async function showWebNotificationsForUser(currentUser, loggingIn = false
             </div>,
             closeButton: true,
           })
-        } catch (e) {
+        } catch (_e) {
           // ignore toast errors
         }
       }
@@ -138,7 +139,7 @@ export default function App() {
     try {
       fetchReferralData(currentUser, useStore.getState().changeUserData).catch(() => {});
       showWebNotificationsForUser(currentUser);
-    } catch (e) {
+    } catch (_e) {
       // 
     }
   }, []);
@@ -172,6 +173,11 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/grades" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/grades/whatif" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/statistics/history" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/statistics/timeline" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/statistics/timetravel" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
+          <Route path="/statistics/impacts" element={<ProtectedRoute><Grades /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/academics/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
           <Route path="/academics/schedules" element={<ProtectedRoute><Schedules /></ProtectedRoute>} />

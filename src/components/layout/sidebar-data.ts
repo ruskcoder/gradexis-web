@@ -9,6 +9,7 @@ import {
   FileCheck,
   ClipboardList,
   Users,
+  ChartLine
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -43,9 +44,20 @@ export const sidebarData: SidebarData = {
       url: "#",
       icon: Calculator,
       items: [
+        { title: "What If", url: "/grades/whatif" },
         { title: "Final Exam", url: "/calculators/final-exam" },
-        { title: "What If", url: "/grades?whatif=true" },
         { title: "GPA/Rank", url: "/calculators/gpa-rank" },
+      ],
+    },
+    {
+      title: "Statistics & Analysis",
+      url: "#",
+      icon: ChartLine,
+      items: [
+        { title: "Impacts", url: "/statistics/impacts" },
+        { title: "History", url: "/statistics/history" },
+        { title: "Timeline", url: "/statistics/timeline" },
+        { title: "TimeTravel", url: "/statistics/timetravel" },
       ],
     },
     {

@@ -54,7 +54,7 @@ export default function ReportCard() {
     return reportCards.find((rc) => rc.reportCardRun === selectedRun)
   }, [reportCards, selectedRun])
 
-  const getAllColumns = React.useMemo(() => {
+  const _getAllColumns = React.useMemo(() => {
     if (!selectedReportCard || !selectedReportCard.report || selectedReportCard.report.length === 0) {
       return []
     }

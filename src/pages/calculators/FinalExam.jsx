@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { useCurrentUser } from '@/lib/store'
 import { getClasses } from '@/lib/grades-api'
+import { getLatestGradesLoad, hasStorageData, getInitialTerm, getTermList } from '@/lib/grades-store'
 import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { PremiumDialog } from '@/components/custom/premium-dialog'
+import { X } from 'lucide-react'
 
 export default function FinalExamCalculator() {
 
@@ -31,8 +33,6 @@ export default function FinalExamCalculator() {
   const [selectedClass, setSelectedClass] = React.useState('')
   const [selectedTerms, setSelectedTerms] = React.useState(new Set())
   const [loadingTerms, setLoadingTerms] = React.useState({})
-  const [termGrades, setTermGrades] = React.useState({})
-  const [fetchProgress, setFetchProgress] = React.useState({})
   const [initialClassesData, setInitialClassesData] = React.useState({})
   const [cachedTermData, setCachedTermData] = React.useState({})
 
@@ -45,6 +45,8 @@ export default function FinalExamCalculator() {
   const [calculateError, setCalculateError] = React.useState('')
   const [isExempting, setIsExempting] = React.useState(false)
   const [showPremiumDialog, setShowPremiumDialog] = React.useState(false)
+
+  const loadedFromStorageRef = React.useRef(false)
 
   const user = useCurrentUser()
   const showTitle = user ? user.showPageTitles !== false : true
@@ -79,13 +81,16 @@ export default function FinalExamCalculator() {
           if (chunk.percent !== undefined && chunk.message !== undefined) {
 
           } else if (chunk.success === true) {
+            if (loadedFromStorageRef.current) {
+              return
+            }
+
             setTermList(chunk.termList)
             setCurrentTerm(chunk.term)
             setClasses(chunk.classes)
 
             setInitialClassesData((prev) => ({ ...prev, [chunk.term]: chunk.classes }))
-            
-            // Cache the initial term's data
+
             setCachedTermData((prev) => ({
               ...prev,
               [chunk.term]: chunk.classes,
@@ -116,7 +121,7 @@ export default function FinalExamCalculator() {
     }
 
     fetchInitial()
-  }, [])
+  }, [selectedClass])
 
   const handleFetchData = async () => {
     if (!selectedClass) {
@@ -131,7 +136,7 @@ export default function FinalExamCalculator() {
       return
     }
 
-    setCalculateError('') 
+    setCalculateError('')
 
     for (const term of termsToFetch) {
       try {
@@ -147,7 +152,6 @@ export default function FinalExamCalculator() {
 
             const selectedClassData = chunk.classes.find(cls => cls.course === selectedClass)
 
-            // Cache the entire term's data for future use
             setCachedTermData((prev) => ({
               ...prev,
               [term]: chunk.classes,
@@ -172,6 +176,61 @@ export default function FinalExamCalculator() {
         setCalculateError(`Failed to load data for Term ${term}`)
         setLoadingTerms((prev) => ({ ...prev, [term]: false }))
       }
+    }
+  }
+
+  const handleUseStored = () => {
+    if (!selectedClass) {
+      setCalculateError('Please select a class first')
+      return
+    }
+
+    setCalculateError('')
+
+    for (const term of selectedTerms) {
+      const latestLoad = getLatestGradesLoad(term)
+
+      if (latestLoad) {
+        const selectedClassData = latestLoad.classes.find(cls => cls.course === selectedClass)
+
+        if (selectedClassData && selectedClassData.average !== undefined && selectedClassData.average !== '') {
+          const classAverage = parseFloat(selectedClassData.average)
+          setTermAverages((prev) => ({ ...prev, [term]: classAverage.toFixed(2) }))
+          setCalculatorTermAverages((prev) => ({ ...prev, [term]: classAverage.toFixed(2) }))
+        } else {
+          setTermAverages((prev) => ({ ...prev, [term]: '' }))
+          setCalculatorTermAverages((prev) => ({ ...prev, [term]: '' }))
+          setCalculateError(`No grade data for selected class in Term ${term}`)
+        }
+      }
+    }
+  }
+
+  const handleUseStoredInitial = () => {
+    const storedInitialTerm = getInitialTerm()
+    const storedTermList = getTermList()
+    const latestLoad = getLatestGradesLoad(storedInitialTerm)
+
+    if (latestLoad && storedTermList.length > 0) {
+      loadedFromStorageRef.current = true
+      setTermList(storedTermList)
+      setCurrentTerm(storedInitialTerm)
+      setClasses(latestLoad.classes)
+      setSelectedTerms(new Set([storedInitialTerm]))
+
+      if (latestLoad.classes.length > 0) {
+        const firstClass = latestLoad.classes[0]?.course
+        setSelectedClass(firstClass)
+
+        const firstClassData = latestLoad.classes[0]
+        if (firstClassData && firstClassData.average !== undefined && firstClassData.average !== '') {
+          const classAverage = parseFloat(firstClassData.average)
+          setTermAverages({ [storedInitialTerm]: classAverage.toFixed(2) })
+          setCalculatorTermAverages({ [storedInitialTerm]: classAverage.toFixed(2) })
+        }
+      }
+
+      setLoadingInitial(false)
     }
   }
 
@@ -312,6 +371,15 @@ export default function FinalExamCalculator() {
     return Array.from(selectedTerms).sort((a, b) => termList.indexOf(a) - termList.indexOf(b))
   }, [selectedTerms, termList])
 
+  const allTermsHaveStorage = React.useMemo(() => {
+    return Array.from(selectedTerms).every(term => hasStorageData(term))
+  }, [selectedTerms])
+
+  const hasInitialStorageData = React.useMemo(() => {
+    const initialTerm = getInitialTerm()
+    return initialTerm !== '' && hasStorageData(initialTerm)
+  }, [])
+
   const exemptingAverage = React.useMemo(() => {
     const validAverages = Object.values(termAverages)
       .map(val => parseFloat(val))
@@ -329,11 +397,20 @@ export default function FinalExamCalculator() {
       <PremiumDialog open={showPremiumDialog} onOpenChange={setShowPremiumDialog} />
 
       <ResizablePanelGroup direction="horizontal" className="space-x-2">
-        {}
+        { }
         <ResizablePanel className="relative bg-card rounded-xl border flex flex-col min-w-[400px]">
           {loadingInitial && (
-            <div className="absolute inset-0 bg-card/85 flex items-center justify-center z-50 rounded-xl">
+            <div className="absolute inset-0 bg-card/85 flex flex-col items-center justify-center z-50 rounded-xl gap-3">
               <Spinner className="size-8" />
+              {hasInitialStorageData && (
+                <Button
+                  onClick={handleUseStoredInitial}
+                  variant="outline"
+                  size="sm"
+                >
+                  Use Stored
+                </Button>
+              )}
             </div>
           )}
 
@@ -348,8 +425,7 @@ export default function FinalExamCalculator() {
               <Label>Select Class</Label>
               <Select value={selectedClass} onValueChange={(classValue) => {
                 setSelectedClass(classValue)
-                
-                // Load cached data for all selected terms
+
                 selectedTerms.forEach((term) => {
                   if (cachedTermData[term]) {
                     const selectedClassData = cachedTermData[term].find(cls => cls.course === classValue)
@@ -400,9 +476,19 @@ export default function FinalExamCalculator() {
               </div>
             </div>
 
-            <Button onClick={handleFetchData} className="w-full">
-              Fetch Data
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleFetchData} className="flex-1">
+                Fetch Data
+              </Button>
+              <Button
+                onClick={handleUseStored}
+                variant="outline"
+                className="flex-1"
+                disabled={!allTermsHaveStorage}
+              >
+                Use Stored
+              </Button>
+            </div>
 
             <div className="space-y-2 mt-2 pt-4 border-t">
               <Label className="text-sm font-medium">Grade</Label>
@@ -436,7 +522,7 @@ export default function FinalExamCalculator() {
 
         <ResizableHandle className="bg-border hover:bg-accent/50" />
 
-        {}
+        { }
         <ResizablePanel className="relative bg-card rounded-xl border flex flex-col min-w-[400px]">
           {loadingInitial && (
             <div className="absolute inset-0 bg-card/85 flex items-center justify-center z-50 rounded-xl">
@@ -500,18 +586,28 @@ export default function FinalExamCalculator() {
             <div className="flex gap-3">
               <div className="flex-1 space-y-2">
                 <Label htmlFor="finalExamGrade">Final Exam Grade</Label>
-                <Input
-                  id="finalExamGrade"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={finalExamGrade}
-                  onChange={(e) => setFinalExamGrade(e.target.value)}
-                  placeholder="Final exam grade"
-                  autoFocus={calculatedField === 'finalExam'}
-                  disabled={isExempting}
-                />
+                <div className="relative">
+                  <Input
+                    id="finalExamGrade"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={finalExamGrade}
+                    onChange={(e) => setFinalExamGrade(e.target.value)}
+                    placeholder="Final exam grade"
+                    autoFocus={calculatedField === 'finalExam'}
+                    disabled={isExempting}
+                  />
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='text-muted-foreground focus-visible:ring-ring/50 absolute inset-y-0 right-0 rounded-l-none hover:bg-transparent'
+                    onClick={() => setFinalExamGrade('')}
+                  >
+                    <X />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2" style={{ width: '30%' }}>
                 <Label htmlFor="finalExamWeight">Weight (%)</Label>
@@ -533,17 +629,27 @@ export default function FinalExamCalculator() {
             <div className="space-y-2">
               <Label htmlFor="desiredAverage">Semester Average</Label>
               <div className="flex gap-2">
-                <Input
-                  id="desiredAverage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={desiredAverage}
-                  onChange={(e) => setDesiredAverage(e.target.value)}
-                  placeholder="Semester average"
-                  autoFocus={calculatedField === 'desired'}
-                />
+                <div className="relative flex-1">
+                  <Input
+                    id="desiredAverage"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={desiredAverage}
+                    onChange={(e) => setDesiredAverage(e.target.value)}
+                    placeholder="Semester average"
+                    autoFocus={calculatedField === 'desired'}
+                  />
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='text-muted-foreground focus-visible:ring-ring/50 absolute inset-y-0 right-0 rounded-l-none hover:bg-transparent'
+                    onClick={() => setDesiredAverage('')}
+                  >
+                    <X />
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setDesiredAverage('89.5')}

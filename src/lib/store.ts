@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { PLATFORMS, CLASSES_ENDPOINT } from './constants';
+import { PLATFORMS } from './constants';
 
 type Platform = typeof PLATFORMS[number];
 
@@ -54,6 +54,11 @@ export interface User {
   rankDataPoints: Array<{ gpa: number | null; rank: number | null }>;
   todos: TodoItem[];
   shortcuts: Shortcut[];
+  gradesStore: {
+    initialTerm: string;
+    termList: string[];
+    history: Record<string, Record<string, Array<{ loadedAt: number; average: any; categories: any; scores: any[] }>>>;
+  };
 }
 
 const DEFAULT_USER: User = {
@@ -85,6 +90,11 @@ const DEFAULT_USER: User = {
   ],
   todos: [],
   shortcuts: [],
+  gradesStore: {
+    initialTerm: '',
+    termList: [],
+    history: {},
+  },
 };
 
 interface Session {
@@ -118,6 +128,15 @@ interface UserStore {
   addShortcut: (shortcut: Omit<Shortcut, 'id'>) => void;
   updateShortcut: (id: string, updates: Partial<Shortcut>) => void;
   removeShortcut: (id: string) => void;
+  addGradesStore: (initialTerm: string, termList: string[], term: string, classes: any[]) => void;
+  addGradesStoreLoad: (term: string, classes: any[]) => void;
+  updateLatestGradesLoadTime: (term: string) => void;
+  getGradesStore: () => {
+    initialTerm: string;
+    termList: string[];
+    history: Record<string, Array<{ loadedAt: number; classes: any[] }>>;
+  };
+  clearGradesStore: () => void;
 }
 
 export const useStore = create<UserStore>()(
@@ -306,14 +325,216 @@ export const useStore = create<UserStore>()(
           return { users: newUsers };
         });
       },
+
+      addGradesStore: (initialTerm: string, termList: string[], term: string, classes: any[]) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            const newHistory = { ...currentUser.gradesStore.history };
+            if (!newHistory[term]) {
+              newHistory[term] = {};
+            } else {
+              newHistory[term] = { ...newHistory[term] };
+            }
+
+            for (const classData of classes) {
+              const courseKey = `${classData.course}|${classData.name}`;
+              if (!newHistory[term][courseKey]) {
+                newHistory[term][courseKey] = [];
+              } else {
+                newHistory[term][courseKey] = [...newHistory[term][courseKey]];
+              }
+
+              const courseHistory = newHistory[term][courseKey];
+              if (courseHistory && courseHistory.length > 0) {
+                const latestEntry = courseHistory[courseHistory.length - 1];
+                if (
+                  latestEntry &&
+                  JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
+                  JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
+                  JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
+                ) {
+
+                  courseHistory[courseHistory.length - 1] = {
+                    loadedAt: Date.now(),
+                    average: classData.average,
+                    categories: classData.categories,
+                    scores: classData.scores,
+                  };
+                  continue;
+                }
+              }
+
+              if (courseHistory) {
+                courseHistory.push({
+                  loadedAt: Date.now(),
+                  average: classData.average,
+                  categories: classData.categories,
+                  scores: classData.scores,
+                });
+              }
+            }
+
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              gradesStore: {
+                initialTerm,
+                termList,
+                history: newHistory,
+              },
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      addGradesStoreLoad: (term: string, classes: any[]) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            const newHistory = { ...currentUser.gradesStore.history };
+            if (!newHistory[term]) {
+              newHistory[term] = {};
+            } else {
+              newHistory[term] = { ...newHistory[term] };
+            }
+
+            for (const classData of classes) {
+              const courseKey = `${classData.course}|${classData.name}`;
+              if (!newHistory[term][courseKey]) {
+                newHistory[term][courseKey] = [];
+              } else {
+                newHistory[term][courseKey] = [...newHistory[term][courseKey]];
+              }
+
+              const courseHistory = newHistory[term][courseKey];
+              if (courseHistory && courseHistory.length > 0) {
+                const latestEntry = courseHistory[courseHistory.length - 1];
+
+                if (
+                  latestEntry &&
+                  JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
+                  JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
+                  JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
+                ) {
+
+                  courseHistory[courseHistory.length - 1] = {
+                    loadedAt: Date.now(),
+                    average: classData.average,
+                    categories: classData.categories,
+                    scores: classData.scores,
+                  };
+                  continue;
+                }
+              }
+
+              if (courseHistory) {
+                courseHistory.push({
+                  loadedAt: Date.now(),
+                  average: classData.average,
+                  categories: classData.categories,
+                  scores: classData.scores,
+                });
+              }
+            }
+
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              gradesStore: {
+                ...currentUser.gradesStore,
+                history: newHistory,
+              },
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
+
+      updateLatestGradesLoadTime: (term: string) => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            const newHistory = { ...currentUser.gradesStore.history };
+            if (newHistory[term]) {
+              newHistory[term] = { ...newHistory[term] };
+
+              for (const courseKey in newHistory[term]) {
+                const courseHistory = newHistory[term][courseKey];
+                if (courseHistory && courseHistory.length > 0) {
+                  const latestEntry = courseHistory[courseHistory.length - 1];
+                  if (latestEntry) {
+                    courseHistory[courseHistory.length - 1] = {
+                      loadedAt: Date.now(),
+                      average: latestEntry.average,
+                      categories: latestEntry.categories,
+                      scores: latestEntry.scores,
+                    };
+                  }
+                }
+              }
+              newUsers[state.currentUserIndex] = {
+                ...currentUser,
+                gradesStore: {
+                  ...currentUser.gradesStore,
+                  history: newHistory,
+                },
+              } as User;
+            }
+          }
+          return { users: newUsers };
+        });
+      },
+
+      getGradesStore: () => {
+        const { users, currentUserIndex } = get();
+        if (users.length === 0 || currentUserIndex < 0 || currentUserIndex >= users.length) {
+          return {
+            initialTerm: '',
+            termList: [],
+            history: {} as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
+          };
+        }
+        const store = users[currentUserIndex]?.gradesStore;
+        if (!store) {
+          return {
+            initialTerm: '',
+            termList: [],
+            history: {} as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
+          };
+        }
+        return {
+          initialTerm: store.initialTerm,
+          termList: store.termList,
+          history: store.history as unknown as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
+        };
+      },
+
+      clearGradesStore: () => {
+        set((state) => {
+          const newUsers = [...state.users];
+          if (newUsers[state.currentUserIndex]) {
+            const currentUser = newUsers[state.currentUserIndex]!;
+            newUsers[state.currentUserIndex] = {
+              ...currentUser,
+              gradesStore: {
+                initialTerm: '',
+                termList: [],
+                history: {},
+              },
+            } as User;
+          }
+          return { users: newUsers };
+        });
+      },
     }),
     {
       name: 'user-store', 
       partialize: (state) => ({
         users: state.users,
         currentUserIndex: state.currentUserIndex,
-        cache: state.cache,
-        cacheTimestamp: state.cacheTimestamp,
       }),
       onRehydrateStorage: () => (persistedState) => {
         try {
@@ -344,30 +565,6 @@ export const useStore = create<UserStore>()(
 
           ;(persistedState as any).users = mergedUsers
           ;(persistedState as any).currentUserIndex = idx
-
-          const ts: any = (persistedState as any).cacheTimestamp
-          if (ts && typeof ts === 'number') {
-            const now = Date.now()
-            const age = now - ts
-            const FIVE_MIN = 5 * 60 * 1000
-            if (age > FIVE_MIN) {
-              ;(persistedState as any).cache = {}
-              ;(persistedState as any).cacheTimestamp = null
-            }
-          }
-
-          try {
-            const cacheObj = (persistedState as any).cache
-            if (cacheObj && typeof cacheObj === 'object') {
-              for (const key of Object.keys(cacheObj)) {
-                if (key.startsWith(CLASSES_ENDPOINT + ':')) {
-                  delete cacheObj[key]
-                }
-              }
-            }
-          } catch (e) {
-            console.error('Error pruning classes cache on rehydrate', e)
-          }
         } catch (e) {
           console.error(e)
         }
@@ -395,3 +592,4 @@ export const getSession = () => {
 export const setSession = (session: Partial<Session>) => {
   useStore.getState().setSession(session);
 };
+

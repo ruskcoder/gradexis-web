@@ -3,8 +3,6 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
 import { ProgressCircle } from "@/components/ui/circular-progress"
@@ -17,13 +15,17 @@ import {
 export const categoryColor = (category) => {
   switch (category.toLowerCase()) {
     case "major":
-      return "bg-purple-500"
+      return "#a855f7" 
+
     case "minor":
-      return "bg-green-500"
+      return "#22c55e" 
+
     case "other":
-      return "bg-yellow-500"
+      return "#eab308" 
+
     default:
-      return "bg-gray-500"
+      return "#6b7280" 
+
   }
 }
 
@@ -74,9 +76,9 @@ export function CategoryGradeList({ children }) {
 export function CategoryGradeStat({ categoryData }) {
   const categoryName = categoryData.category || Object.keys(categoryData)[0]
   const data = typeof categoryData.category === 'string' ? categoryData : categoryData[categoryName]
-  
+
   const percent = parseFloat(data.percent || data.categoryPoints || 0).toPrecision(4)
-  
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -86,7 +88,7 @@ export function CategoryGradeStat({ categoryData }) {
             <ItemTitle className="text-2xl">{percent}</ItemTitle>
           </ItemContent>
           <ItemActions className="pr-1">
-            <div className={`w-5 h-10 rounded-sm ${categoryColor(categoryName)}`}></div>
+            <div className="w-5 h-10 rounded-sm" style={{ backgroundColor: categoryColor(categoryName) }}></div>
           </ItemActions>
         </Item>
       </PopoverTrigger>

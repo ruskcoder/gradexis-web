@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Progress } from "@/components/ui/progress"
-import { GradesItem, GradesList, ClassGradesItem, ClassGradesList } from '@/components/custom/grades-item'
+import { ClassGradesItem, ClassGradesList } from '@/components/custom/grades-item'
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemTitle,
-  ItemDescription,
 } from "@/components/ui/item"
 import {
   Popover,

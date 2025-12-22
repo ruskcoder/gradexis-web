@@ -384,7 +384,6 @@ export default function GPARankCalculator() {
 
     let totalGPA = 0
     let totalWeight = 0
-    console
     for (const course of validCourses) {
       const courseGPA = calculateCourseGPA(course.grade, course.type)
       if (courseGPA !== null) {

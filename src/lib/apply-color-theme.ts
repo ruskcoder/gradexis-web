@@ -30,7 +30,7 @@ export async function applyColorTheme(themeFilename: string) {
     if (!themeVars) return
 
     // Apply CSS variables to the document root
-    Object.entries(themeVars).forEach(([key, value]: [string, any]) => {
+    Object.entries(themeVars).forEach(([key, value]: [string, unknown]) => {
       if (typeof value === 'string') {
         // Set border with !important to ensure it takes precedence
         if (key === 'border') {

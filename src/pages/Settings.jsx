@@ -1,10 +1,10 @@
 import React from 'react'
 import { useState, useEffect } from 'react'
 import { useCurrentUser, useStore } from '@/lib/store'
-import { API_URL } from '@/lib/constants'
 import { getColorThemes } from '@/lib/color-themes'
 import { applyColorTheme } from '@/lib/apply-color-theme'
 import { fetchReferralData } from '@/App'
+import { clearGradesStore } from '@/lib/grades-store'
 import {
   Select,
   SelectTrigger,
@@ -17,6 +17,16 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useTheme } from '@/components/theme-provider'
 import { GradesItem } from '@/components/custom/grades-item'
 
@@ -45,6 +55,7 @@ export default function Settings() {
   const [colorThemes, setColorThemes] = useState([])
   const [themesLoading, setThemesLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false)
 
   useEffect(() => {
     if (user?.username) {
@@ -246,6 +257,41 @@ export default function Settings() {
                 <div className="text-sm text-muted-foreground">Show or hide page titles across the app.</div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">Data Management</h2>
+          <p className="text-sm text-muted-foreground mt-1">Manage your stored data.</p>
+
+          <div className="mt-4">
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowClearHistoryDialog(true)}
+            >
+              Clear Grades History
+            </Button>
+            <AlertDialog open={showClearHistoryDialog} onOpenChange={setShowClearHistoryDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear Grades History?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all stored grades history. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => {
+                      clearGradesStore();
+                      setShowClearHistoryDialog(false);
+                    }}
+                  >
+                    Clear
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </section>
       </div>
