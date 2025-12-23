@@ -49,6 +49,7 @@ export async function fetchReferralData(user, changeUserData, {
       document.body.innerHTML = `
         <div style="
           display: flex;
+          flex-direction: column;
           justify-content: center;
           align-items: center;
           height: 100vh;
@@ -60,7 +61,18 @@ export async function fetchReferralData(user, changeUserData, {
         ">
           <div>
         <strong>You have been blocked. <br/> Please contact info@gradexis.com for assistance.</strong>
+          
           </div>
+          <button style="
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #721c24;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+          " onclick="localStorage.clear(); location.reload();">Logout</button>
         </div>
       `;
       document.body.style.margin = "0";

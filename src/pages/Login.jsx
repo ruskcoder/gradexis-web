@@ -24,7 +24,7 @@ import Wallpaper from '@/assets/wallpaper.jpg'
 import { districts, PLATFORM_MAPPING } from '@/lib/constants';
 import { login } from '@/lib/grades-api';
 import { useStore } from '@/lib/store';
-import { showWebNotificationsForUser } from '@/App';
+import { showWebNotificationsForUser, fetchReferralData } from '@/App';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -76,6 +76,7 @@ export default function Login() {
 
         const newUser = useStore.getState().users[newIndex];
         try { showWebNotificationsForUser(newUser, true) } catch (_) {  }
+        await fetchReferralData(newUser, useStore.getState().changeUserData);
 
         navigate('/dashboard');
       } else {
