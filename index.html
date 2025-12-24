@@ -6,10 +6,40 @@
   <link rel="icon" type="image/svg+xml" href="/logo-rounded.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gradexis</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Lexend:wght@100..900&display=swap"
     rel="stylesheet">
+
+  <script>
+    const winNav = navigator;
+    const vendorName = winNav.vendor;
+
+    const isChromium = window.chrome;
+    const isOpera = typeof window.opr !== "undefined";
+    const isIEedge = winNav.userAgent.includes("Edg");
+    const isIOSChrome = winNav.userAgent.includes("CriOS");
+
+    const isGoogleChrome =
+      isChromium &&
+      vendorName === "Google Inc." &&
+      !isOpera &&
+      !isIEedge &&
+      (!winNav.userAgentData ||
+        winNav.userAgentData.brands.some(b => b.brand === "Google Chrome"));
+
+    if (!isGoogleChrome) {
+      const style = document.createElement("style");
+      style.textContent = `
+        * {
+          scrollbar-color: var(--primary) transparent;
+          scrollbar-width: thin;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  </script>
 </head>
 
 <body style="background-color: var(--background);">

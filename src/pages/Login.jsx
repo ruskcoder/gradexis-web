@@ -107,7 +107,7 @@ export default function Login() {
     setDistrict(district.name);
     setLink(district.link);
     setPlatform(district.platform);
-    setLoginType(district.logintype);
+    setLoginType(district.loginType);
     setTimeout(() => {
       changePage(2);
     }, 0);
@@ -195,7 +195,7 @@ export default function Login() {
                   />
                   <ItemGroup className="gap-2 max-h-[300px] overflow-y-auto overflow-x-clip w-full">
                     {filteredDistricts.map((district, index) => (
-                      <Item variant="outline" key={index} className="cursor-pointer" onClick={() => selectDistrict(district)}>
+                      <Item variant="outline" key={index} className="cursor-pointer mr-1" onClick={() => selectDistrict(district)}>
                         <ItemContent>
                           <ItemHeader>
                             <ItemTitle>
@@ -244,6 +244,7 @@ export default function Login() {
                             <Input
                               type="text"
                               value={username}
+                              placeholder="Username"
                               onChange={(e) => setUsername(e.target.value)}
                               required
                             />
@@ -253,6 +254,7 @@ export default function Login() {
                             <Input
                               type="password"
                               value={password}
+                              placeholder="Password"
                               onChange={(e) => setPassword(e.target.value)}
                               required
                             />
