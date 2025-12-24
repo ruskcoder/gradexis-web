@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import './theme.css';
 import './App.css';
 import './assets/css/main.css';
 import { ThemeProvider } from '@/components/theme-provider';
