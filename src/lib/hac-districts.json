@@ -92,7 +92,7 @@
   {
     "name": "Akron Public Schools",
     "platform": "hac",
-    "link": "https://homeaccess.akron.kl 2.0h.us/",
+    "link": "https://homeaccess.akron.k12.oh.us/",
     "loginType": "credentials"
   },
   {
@@ -152,7 +152,7 @@
   {
     "name": "Carroll County Public Schools",
     "platform": "hac",
-    "link": "https://mystudent.carrollkl 2.org/",
+    "link": "https://mystudent.carrollk12.org/",
     "loginType": "credentials"
   },
   {
@@ -164,13 +164,13 @@
   {
     "name": "St. Johns County SD",
     "platform": "hac",
-    "link": "https://homeaccess.stjohns.kl 2.fI.us/",
+    "link": "https://homeaccess.stjohns.k12.fl.us/",
     "loginType": "credentials"
   },
   {
     "name": "Tacoma Public Schools",
     "platform": "hac",
-    "link": "https://espha.tacoma.kl 2.wa.us/",
+    "link": "https://espha.tacoma.k12.wa.us/",
     "loginType": "credentials"
   },
   {
@@ -224,7 +224,7 @@
   {
     "name": "Alief ISD",
     "platform": "hac",
-    "link": "https://aliefhacl .aliefisd.net/",
+    "link": "https://aliefhacl.aliefisd.net/",
     "loginType": "credentials"
   },
   {
@@ -296,13 +296,13 @@
   {
     "name": "Calvert County Public Schools",
     "platform": "hac",
-    "link": "https://hac.caIvertnet.k12.md.us/",
+    "link": "https://hac.calvertnet.k12.md.us/",
     "loginType": "credentials"
   },
   {
     "name": "Centerville City SD",
     "platform": "hac",
-    "link": "https://hac.centerville.kl 2.0h.us/",
+    "link": "https://hac.centerville.k12.oh.us/",
     "loginType": "credentials"
   },
   {
@@ -314,7 +314,7 @@
   {
     "name": "Suffolk Public Schools",
     "platform": "hac",
-    "link": "https://hac.spskl 2.net/",
+    "link": "https://hac.spsk12.net/",
     "loginType": "credentials"
   },
   {
@@ -360,663 +360,651 @@
     "loginType": "credentials"
   },
   {
-    "name": "LaSalle-Peru Township High School",
+    "name": "LaSalle-Peru Township High School District 120",
     "platform": "hac",
-    "link": "https://District 120/",
+    "link": "https://ehome.lphs.org/",
     "loginType": "credentials"
   },
   {
-    "name": "ehome.lphs.org",
+    "name": "Evanston Township High School District 202",
     "platform": "hac",
-    "link": "https://Evanston Township High School/",
+    "link": "https://hac.eths.k12.il.us/",
     "loginType": "credentials"
   },
   {
-    "name": "District 202",
+    "name": "Leyden Community High School District 212",
     "platform": "hac",
-    "link": "https://hac.eths.kl 2.il.us/",
+    "link": "https://hac.Ieyden212.org/",
     "loginType": "credentials"
   },
   {
-    "name": "Leyden Community High School",
+    "name": "LaPorte ISD",
     "platform": "hac",
-    "link": "https://District 212/",
+    "link": "https://hac.lpisd.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.Ieyden212.org",
+    "name": "Pharr-San Juan-Alamo Independent School District",
     "platform": "hac",
-    "link": "https://LaPorte ISD/",
+    "link": "https://homeaccess.psjaisd.us/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lpisd.org",
+    "name": "Lake Park High School District 108",
     "platform": "hac",
-    "link": "https://Pharr-San Juan-Alamo Independent School District/",
+    "link": "https://ehome.lphs.org/",
     "loginType": "credentials"
   },
   {
-    "name": "homeaccess.psjaisd.us",
+    "name": "Bethel Park SD",
     "platform": "hac",
-    "link": "https://Lake Park High School District 108/",
+    "link": "https://bpk-hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "ehome.lphs.org",
+    "name": "San Marcos Consolidated ISD",
     "platform": "hac",
-    "link": "https://Bethel Park SD/",
+    "link": "https://homeaccess.smcisd.net/",
     "loginType": "credentials"
   },
   {
-    "name": "bpk-hac.eschoolplus.powerschool.com",
+    "name": "Conroe ISD",
     "platform": "hac",
-    "link": "https://San Marcos Consolidated ISD/",
+    "link": "https://hac.conroeisd.net/",
     "loginType": "credentials"
   },
   {
-    "name": "homeaccess.smcisd.net",
+    "name": "Cleveland ISD",
     "platform": "hac",
-    "link": "https://Conroe ISD/",
+    "link": "https://eshac.ctxisd.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.conroeisd.net",
+    "name": "Irvington UFSD",
     "platform": "hac",
-    "link": "https://Cleveland ISD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "eshac.ctxisd.org",
+    "name": "Eastchester",
     "platform": "hac",
-    "link": "https://Irvington UFSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "Lakeland CSD",
     "platform": "hac",
-    "link": "https://Eastchester/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "MtVernonCSD",
     "platform": "hac",
-    "link": "https://Lakeland CSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "Nanuet UFSD",
     "platform": "hac",
-    "link": "https://MtVernonCSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "New Rochelle CSD",
     "platform": "hac",
-    "link": "https://Nanuet UFSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "Port Chester UFSD",
     "platform": "hac",
-    "link": "https://New Rochelle CSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "GreenburghCSD",
     "platform": "hac",
-    "link": "https://Port Chester UFSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "Greenburghl 1",
     "platform": "hac",
-    "link": "https://GreenburghCSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "GreenburghNorthCastIeUFSD",
     "platform": "hac",
-    "link": "https://Greenburghl 1/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "Hawthorne Cedar Knolls UFSD",
     "platform": "hac",
-    "link": "https://GreenburghNorthCastIeUFSD/",
+    "link": "https://hac.lhric.org/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "PITeSchool Live",
     "platform": "hac",
-    "link": "https://Hawthorne Cedar Knolls UFSD/",
+    "link": "https://hac40.pps.k12.pa.us/",
     "loginType": "credentials"
   },
   {
-    "name": "hac.lhric.org",
+    "name": "Blachly Live",
     "platform": "hac",
-    "link": "https://PITeSchool Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "hac40.pps.k12.pa.us",
+    "name": "Creswell Live",
     "platform": "hac",
-    "link": "https://Blachly Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Crow-Applegate Live",
     "platform": "hac",
-    "link": "https://Creswell Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Dallas Live",
     "platform": "hac",
-    "link": "https://Crow-Applegate Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141hac.eschoolpIus.powerschool.com",
+    "name": "Dayton SD Live",
     "platform": "hac",
-    "link": "https://Dallas Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Fern Ridge Live",
     "platform": "hac",
-    "link": "https://Dayton SD Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Junction City Live",
     "platform": "hac",
-    "link": "https://Fern Ridge Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Klamath Live",
     "platform": "hac",
-    "link": "https://Junction City Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Lane ESD Live",
     "platform": "hac",
-    "link": "https://Klamath Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Lowell Live",
     "platform": "hac",
-    "link": "https://Lane ESD Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Mapleton Live",
     "platform": "hac",
-    "link": "https://Lowell Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Mckenzie Live",
     "platform": "hac",
-    "link": "https://Mapleton Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "McMinnville Live",
     "platform": "hac",
-    "link": "https://Mckenzie Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Muslim Eductional Trust Live",
     "platform": "hac",
-    "link": "https://McMinnville Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "North Wasco Live",
     "platform": "hac",
-    "link": "https://Muslim Eductional Trust Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141hac.eschoolpIus.powerschooI.com",
+    "name": "Oakridge Live",
     "platform": "hac",
-    "link": "https://North Wasco Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Pendleton Live",
     "platform": "hac",
-    "link": "https://Oakridge Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Perrydale Live",
     "platform": "hac",
-    "link": "https://Pendleton Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Sheridan Live",
     "platform": "hac",
-    "link": "https://Perrydale Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "South Lane Live",
     "platform": "hac",
-    "link": "https://Sheridan Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "St. Paul Live",
     "platform": "hac",
-    "link": "https://South Lane Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Ukiah Live",
     "platform": "hac",
-    "link": "https://St. Paul Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "WESD El/ECSE Live",
     "platform": "hac",
-    "link": "https://Ukiah Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Willamette Career Academy Live",
     "platform": "hac",
-    "link": "https://WESD El/ECSE Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Willamette ESD Template41",
     "platform": "hac",
-    "link": "https://Willamette Career Academy Live/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Willamina Live",
     "platform": "hac",
-    "link": "https://Willamette ESD Template41/",
+    "link": "https://wi141hac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Alamo Heights Live",
     "platform": "hac",
-    "link": "https://Willamina Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "wi141 hac.eschoolplus.powerschool.com",
+    "name": "Bethel SD Live",
     "platform": "hac",
-    "link": "https://Alamo Heights Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41pwhac.eschoolpIus.powerschooI.com",
+    "name": "Buckeye Union SD Live",
     "platform": "hac",
-    "link": "https://Bethel SD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Cleveland ISD Live",
     "platform": "hac",
-    "link": "https://Buckeye Union SD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Denison ISD Live",
     "platform": "hac",
-    "link": "https://Cleveland ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Granada Hills Charter SD",
     "platform": "hac",
-    "link": "https://Denison ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Hood River County SD Live",
     "platform": "hac",
-    "link": "https://Granada Hills Charter SD/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Huntsville ISD Live",
     "platform": "hac",
-    "link": "https://Hood River County SD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Kingsville ISD Live",
     "platform": "hac",
-    "link": "https://Huntsville ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Melissa ISD Live",
     "platform": "hac",
-    "link": "https://Kingsville ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Nacogdoches ISD Live",
     "platform": "hac",
-    "link": "https://Melissa ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Nederland ISD Live",
     "platform": "hac",
-    "link": "https://Nacogdoches ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "RES PHS Live",
     "platform": "hac",
-    "link": "https://Nederland ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "RES TCP Live",
     "platform": "hac",
-    "link": "https://RES PHS Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Texans Can Academies Live",
     "platform": "hac",
-    "link": "https://RES TCP Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Tuloso-Midway ISD Live",
     "platform": "hac",
-    "link": "https://Texans Can Academies Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41pwhac.eschooIplus.powerschooI.com",
+    "name": "Vanguard Academy Live",
     "platform": "hac",
-    "link": "https://Tuloso-Midway ISD Live/",
+    "link": "https://esp41pwhac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Aurora West SD Live",
     "platform": "hac",
-    "link": "https://Vanguard Academy Live/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
-    "name": "esp41 pwhac.eschoolplus.powerschool.com",
+    "name": "Belvidere Community Unit School Dist#100",
     "platform": "hac",
-    "link": "https://Aurora West SD Live/",
-    "loginType": "credentials"
-  },
-  {
-    "name": "esp41 pehac.eschoolplus.powerschool.com",
-    "platform": "hac",
-    "link": "https://Belvidere Community Unit School/",
-    "loginType": "credentials"
-  },
-  {
-    "name": "Dist#100",
-    "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Brookville ASD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Carmel Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Chester Upland SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Chester Upland 2020",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Coatesville Area SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Conneaut SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Council Rock SD",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "CSMI-AtIantic City Charter Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "CSMI-Camden Charter Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "CSMI-Chester Community Charter Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Franklin Regional Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Greater Latrobe SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Hudson City Schools",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Jefferson County Dubois Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Lower Moreland Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Parkland SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Pennsbury SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Pottstown Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Radnor Township SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Riverview SD",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Rose Tree Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Scranton City SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Souderton Area SD",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Speed SEJA SD #802 Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Springfield SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Springfield Township Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Union Area SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Upper Darby SD",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Upper Moreland Township SD",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Wayland PS Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "West Chicago ESD #33 Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "William Penn SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Windham Public Schools",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Yonkers Public Schools Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Carlynton SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Enfield Live",
     "platform": "hac",
-    "link": "https://esp41pehac.eschoolplus.powerschooI.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Great Oaks Bridgeport Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Jserra Catholic HS Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Rockford Charter School Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "South Park SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
     "name": "Toledo SD Live",
     "platform": "hac",
-    "link": "https://esp41 pehac.eschoolplus.powerschool.com/",
+    "link": "https://esp41pehac.eschoolplus.powerschool.com/",
     "loginType": "credentials"
   },
   {
