@@ -53,6 +53,8 @@ export default function Login() {
         username,
         password,
         link,
+        clsession,
+        district
       };
       const data = await login(platform, loginType, loginDetails, referralCode);
 

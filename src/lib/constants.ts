@@ -7,6 +7,7 @@ export const PLATFORM_MAPPING: Record<string, string> = {
 export const districts = [...hacDistricts];
 export const LOGIN_TYPES = ['credentials', 'classlink'] as const;
 export const API_URL = 'https://api.gradexis.app/';
+// export const API_URL = 'http://localhost:3000/';
 export const API_PLATFORM_ENDPOINTS: Record<typeof PLATFORMS[number], string> = {hac: '/v2/hac/'};
 export const LOGIN_ENDPOINT = '/info';
 export const CLASSES_ENDPOINT = '/classes';
