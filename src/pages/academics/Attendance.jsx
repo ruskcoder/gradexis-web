@@ -39,13 +39,12 @@ export default function Attendance() {
   const handleMonthChange = React.useCallback((month, year) => {
     setCurrentMonth(month);
     setCurrentYear(year);
-    fetchAttendanceForMonth(month, year);
     document.querySelector('.panel-right').scrollTo(0, 0);
-  }, [fetchAttendanceForMonth]);
+  }, []);
 
   React.useEffect(() => {
     fetchAttendanceForMonth(currentMonth, currentYear);
-  }, [currentMonth, currentYear, fetchAttendanceForMonth]);
+  }, [currentMonth, currentYear]);
 
   const user = useCurrentUser();
   const showTitle = user ? user.showPageTitles !== false : true;
@@ -75,15 +74,20 @@ export default function Attendance() {
               const [month, day, year] = dateStr.split('/').map(Number);
               const eventYear = year > 100 ? year : 2000 + year;
               if (month === currentMonth + 1 && eventYear === currentYear) {
-                return eventsList.map((event, idx) => (
-                  <ListItem
-                    key={`${dateStr}-${idx}`}
-                    squareColor={event.color}
-                    squareText={day}
-                    Title={event.event}
-                    Desc={dateStr}
-                  />
-                ));
+                return eventsList.map((event, idx) => {
+                  const dateWithoutYear = `${month}/${day}`;
+                  const periodsDisplay = event.periods.length > 0 ? ` • ${event.periods.join(', ')}` : '';
+                  const desc = `${dateWithoutYear}${periodsDisplay}`;
+                  return (
+                    <ListItem
+                      key={`${dateStr}-${idx}`}
+                      squareColor={event.color}
+                      squareText={day}
+                      Title={event.event}
+                      Desc={desc}
+                    />
+                  );
+                });
               }
               return null;
             })}

@@ -19,6 +19,40 @@ function setCachedValue(key: string, value: any): void {
   useStore.getState().setCacheValue(key, value);
 }
 
+/**
+ * Handles authentication errors by redirecting to login with username prefilled
+ * Throws an error if auth failure is detected
+ */
+function handleAuthError(response: Response, data: any, user: any): void {
+  const isAuthError = response.status === 401 || 
+    data?.message?.includes('Invalid') ||
+    data?.message?.includes('password') ||
+    data?.message?.includes('Session');
+
+  if (isAuthError && user?.username) {
+    // Find user index by username and remove it
+    const users = useStore.getState().users;
+    const userIndex = users.findIndex(u => u.username === user.username);
+    if (userIndex !== -1) {
+      useStore.getState().removeUser(userIndex);
+    }
+    
+    // Redirect to login with username and district info prefilled
+    const params = new URLSearchParams();
+    params.set('username', user.username);
+    params.set('reason', 'password_expired');
+    if (user.district) params.set('district', user.district);
+    if (user.link) params.set('link', user.link);
+    if (user.platform) params.set('platform', user.platform);
+    if (user.loginType) params.set('loginType', user.loginType);
+    
+    const loginUrl = `/login?${params.toString()}`;
+    window.location.href = loginUrl;
+    
+    throw new Error('Password expired - redirecting to login');
+  }
+}
+
 export async function login(
   platform: Platform,
   loginType: LoginType,
@@ -93,6 +127,7 @@ export async function getAttendance(date?: string) {
   const data = await response.json();
 
   if (!response.ok || data.success == false) {
+    handleAuthError(response, data, user);
     throw new Error(data.message || 'Failed to fetch attendance with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
@@ -142,6 +177,7 @@ export async function* getClasses(term?: string) {
   });
 
   if (!response.ok) {
+    handleAuthError(response, { message: 'Failed to fetch classes' }, user);
     throw new Error('Failed to fetch classes with status code ' + response.status);
   }
 
@@ -251,6 +287,7 @@ export async function getSchedule() {
   const data = await response.json();
 
   if (!response.ok || data.success == false) {
+    handleAuthError(response, data, user);
     throw new Error(data.message || 'Failed to fetch schedule with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
@@ -298,6 +335,7 @@ export async function getTranscript() {
   const data = await response.json();
 
   if (!response.ok || data.success == false) {
+    handleAuthError(response, data, user);
     throw new Error(data.message || 'Failed to fetch transcript with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
@@ -345,6 +383,7 @@ export async function getReportCard() {
   const data = await response.json();
 
   if (!response.ok || data.success == false) {
+    handleAuthError(response, data, user);
     throw new Error(data.message || 'Failed to fetch report card with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
@@ -392,6 +431,7 @@ export async function getProgressReport() {
   const data = await response.json();
 
   if (!response.ok || data.success == false) {
+    handleAuthError(response, data, user);
     throw new Error(data.message || 'Failed to fetch progress report with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
@@ -439,6 +479,7 @@ export async function getTeachers() {
   const data = await response.json();
 
   if (!response.ok || data.success == false) {
+    handleAuthError(response, data, user);
     throw new Error(data.message || 'Failed to fetch teachers with status code ' + response.status);
   }
   if (data.session) setSession(data.session);

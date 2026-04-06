@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -40,9 +40,34 @@ export default function Login() {
   const [referralCode, setReferralCode] = useState('');
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
  
   const addUser = useStore((state) => state.addUser);
   const setCurrentUserIndex = useStore((state) => state.setCurrentUserIndex);
+
+  useEffect(() => {
+    const prefillUsername = searchParams.get('username');
+    const reason = searchParams.get('reason');
+    const districtName = searchParams.get('district');
+    const districtLink = searchParams.get('link');
+    const districtPlatform = searchParams.get('platform');
+    const districtLoginType = searchParams.get('loginType');
+    
+    if (prefillUsername) {
+      setUsername(decodeURIComponent(prefillUsername));
+    }
+    
+    if (reason === 'password_expired') {
+      setError('Your password has changed. Please enter your new password.');
+    }
+
+    if (districtName && districtLink && districtPlatform && districtLoginType) {
+      setDistrict(districtName);
+      setLink(districtLink);
+      setPlatform(districtPlatform);
+      setLoginType(districtLoginType);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -120,7 +145,14 @@ export default function Login() {
     setTimeout(() => {
       document.documentElement.classList.remove('dark');  
     }, 0);
-  }, []); 
+  }, []);
+
+  // Jump to login form when district info is restored from URL params
+  useEffect(() => {
+    if (district && link && platform && searchParams.get('district')) {
+      changePage(2);
+    }
+  }, [district, link, platform, searchParams]);
 
   const filteredDistricts = districts.filter((d) => {
     const q = search.trim().toLowerCase();
@@ -261,7 +293,7 @@ export default function Login() {
                               required
                             />
                           </Field>
-                          <Field>
+                          {/* <Field>
                             <FieldLabel>Referral Code</FieldLabel>
                             <Input
                               type="text"
@@ -269,7 +301,7 @@ export default function Login() {
                               value={referralCode}
                               onChange={(e) => setReferralCode(e.target.value)}
                             />
-                          </Field>
+                          </Field> */}
                         </FieldGroup>
                       </FieldSet>
                     </FieldGroup>

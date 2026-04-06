@@ -157,8 +157,11 @@ export default function Calendar({ initialMonth = new Date().getMonth(), initial
                           {evt.event}
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {evt.event}
+                      <TooltipContent side="right" className="text-center px-2 py-2">
+                        <p>{evt.event}</p>
+                        {evt.periods && evt.periods.length > 0 && (
+                          <p>{evt.periods.join(', ')}</p>
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   ))
