@@ -84,24 +84,38 @@ export default function Login() {
       const data = await login(platform, loginType, loginDetails, referralCode);
 
       if (data && data.success) {
-        let avatar = ((data.name || '').split(/\s+/).filter(Boolean).slice(0,2).map(n => (n[0] || '').toUpperCase()).join(''))
-        addUser({
-          loginType,
-          username: data.username || username,
-          password,
-          platform,
-          school: data.school || '',
-          district: data.district,
-          link: data.link || link,
-          name: data.name || '',
-          avatar: avatar || '',
-          premium: data.numReferrals >= 0,
-        });
+        // Check if user already exists in store (password update scenario)
+        const reason = searchParams.get('reason');
+        const existingUsers = useStore.getState().users;
+        const existingUserIndex = existingUsers.findIndex(u => u.username === (data.username || username));
+        
+        let userIndex;
+        if (reason === 'password_expired' && existingUserIndex !== -1) {
+          // Update existing user's password - set as current first
+          userIndex = existingUserIndex;
+          useStore.getState().setCurrentUserIndex(userIndex);
+          useStore.getState().changeUserData('password', password);
+        } else {
+          // Add new user
+          let avatar = ((data.name || '').split(/\s+/).filter(Boolean).slice(0,2).map(n => (n[0] || '').toUpperCase()).join(''))
+          useStore.getState().addUser({
+            loginType,
+            username: data.username || username,
+            password,
+            platform,
+            school: data.school || '',
+            district: data.district,
+            link: data.link || link,
+            name: data.name || '',
+            avatar: avatar || '',
+            premium: data.numReferrals >= 0,
+          });
+          
+          userIndex = Math.max(0, useStore.getState().users.length - 1);
+          useStore.getState().setCurrentUserIndex(userIndex);
+        }
 
-        const newIndex = Math.max(0, useStore.getState().users.length - 1);
-        setCurrentUserIndex(newIndex);
-
-        const newUser = useStore.getState().users[newIndex];
+        const newUser = useStore.getState().users[userIndex];
         try { showWebNotificationsForUser(newUser, true) } catch (_) {  }
         await fetchReferralData(newUser, useStore.getState().changeUserData);
 

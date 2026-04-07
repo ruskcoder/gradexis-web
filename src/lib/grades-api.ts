@@ -21,7 +21,7 @@ function setCachedValue(key: string, value: any): void {
 
 /**
  * Handles authentication errors by redirecting to login with username prefilled
- * Throws an error if auth failure is detected
+ * Keeps user data intact, only requires password update
  */
 function handleAuthError(response: Response, data: any, user: any): void {
   const isAuthError = response.status === 401 || 
@@ -30,14 +30,7 @@ function handleAuthError(response: Response, data: any, user: any): void {
     data?.message?.includes('Session');
 
   if (isAuthError && user?.username) {
-    // Find user index by username and remove it
-    const users = useStore.getState().users;
-    const userIndex = users.findIndex(u => u.username === user.username);
-    if (userIndex !== -1) {
-      useStore.getState().removeUser(userIndex);
-    }
-    
-    // Redirect to login with username and district info prefilled
+    // Keep user in store, just redirect to login to update password
     const params = new URLSearchParams();
     params.set('username', user.username);
     params.set('reason', 'password_expired');
