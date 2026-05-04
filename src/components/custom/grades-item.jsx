@@ -24,32 +24,38 @@ import { categoryColor } from "./grades-stats"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useCurrentUser } from "@/lib/store"
 import { Trash2, Edit, Save } from 'lucide-react'
 
-export const gradeAndColor = (grade, badges = null) => {
+export const gradeAndColor = (grade, badges = null, hideColors = false) => {
   if (grade === null || typeof grade === 'undefined' || grade === '') {
     grade = "···"
   } else {
     grade = parseFloat(grade).toPrecision(4)
   }
 
+  if (grade === "···") return { grade: grade, gradeColor: "bg-gray-400", textColor: "text-white", bgColor: "#9ca3af" };
+
   if (badges && badges.includes("exempt")) {
-    return { grade: "X", gradeColor: "bg-sky-500" }
+    return { grade: "X", gradeColor: "bg-sky-500", textColor: "text-white", bgColor: "#0ea5e9" }
   }
 
   if (badges && (badges.includes("dropped") || badges.includes("excluded"))) {
-    return { grade: grade, gradeColor: "bg-gray-400" }
+    return { grade: grade, gradeColor: "bg-gray-400", textColor: "text-white", bgColor: "#9ca3af" }
   }
 
   if (badges && badges.includes("missing")) {
-    return { grade: grade, gradeColor: "bg-red-500" }
+    return { grade: grade, gradeColor: "bg-red-500", textColor: "text-white", bgColor: "#ef4444" }
   }
 
-  if (grade === "···") return { grade: grade, gradeColor: "bg-gray-400" };
-  if (grade >= 90) return { grade: grade, gradeColor: "bg-green-500" }
-  if (grade >= 80) return { grade: grade, gradeColor: "bg-blue-500" }
-  if (grade >= 70) return { grade: grade, gradeColor: "bg-yellow-500" }
-  return { grade: grade, gradeColor: "bg-red-500" }
+  if (hideColors) {
+    return { grade: grade, gradeColor: "bg-primary", textColor: "text-primary-foreground", bgColor: "var(--primary)" }
+  }
+
+  if (grade >= 90) return { grade: grade, gradeColor: "bg-green-500", textColor: "text-white", bgColor: "#22c55e" }
+  if (grade >= 80) return { grade: grade, gradeColor: "bg-blue-500", textColor: "text-white", bgColor: "#3b82f6" }
+  if (grade >= 70) return { grade: grade, gradeColor: "bg-yellow-500", textColor: "text-white", bgColor: "#eab308" }
+  return { grade: grade, gradeColor: "bg-red-500", textColor: "text-white", bgColor: "#ef4444" }
 }
 
 export function GradesList({ variant, children }) {
@@ -79,24 +85,26 @@ export function GradesList({ variant, children }) {
 }
 
 export function GradesItem({ courseName, id, grade, variant }) {
-  const { grade: gradeValue, gradeColor } = gradeAndColor(grade);
+  const currentUser = useCurrentUser()
+  const hideColors = currentUser?.hideColors ?? false
+  const { grade: gradeValue, gradeColor, textColor, bgColor } = gradeAndColor(grade, null, hideColors)
   return variant === "card" ? (
-    <Card className="w-full pt-0 overflow-hidden pb-2 gap-3 max-w-[350px] min-w-[175px] cursor-pointer hover:bg-accent transition-colors">
+    <Card className="grade-card w-full pt-0 overflow-hidden pb-2 gap-3 max-w-[350px] min-w-[175px] cursor-pointer hover:bg-accent transition-colors">
       <CardHeader
         className="relative flex flex-col justify-center items-center m-0 p-4 py-5 overflow-hidden gap-2"
-        style={{ backgroundColor: 'black' }}
+        style={{ backgroundColor: bgColor }}
       >
         <div
           aria-hidden
-          className="z-1 absolute inset-0 pointer-events-none bg-primary/80 dark:bg-primary/40"
+          className="z-1 absolute inset-0 pointer-events-none bg-black/30 dark:bg-black/60"
         />
-        <span className={`text-[2.5rem]/10 relative z-2 text-white`}>
+        <span className={`text-[2.5rem]/10 relative z-2 ${textColor}`}>
           {gradeValue}
         </span>
         <div className={`z-2 flex w-full text-sm justify-center items-center gap-2`}>
-          <span className="text-white">0%</span>
+          <span className={textColor}>0%</span>
           <Progress value={gradeValue} className="border-1 border-white h-2" dark={true} />
-          <span className="text-white">100%</span>
+          <span className={textColor}>100%</span>
         </div>
       </CardHeader>
       <CardContent className="px-3">
@@ -114,7 +122,7 @@ export function GradesItem({ courseName, id, grade, variant }) {
           </ItemDescription>
         </ItemContent>
         <ItemActions className="flex-shrink-0">
-          <span className={`block font-semibold tracking-wide text-[1.5rem] text-white text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] ${gradeColor} min-w-[86px]`}>
+          <span className={`block font-semibold tracking-wide text-[1.5rem] ${textColor} text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] ${gradeColor} min-w-[86px]`}>
             {gradeValue}
           </span>
         </ItemActions>
@@ -136,6 +144,8 @@ export function ClassGradesList({ children }) {
 }
 
 export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditPercentage, impactBadge }) {
+  const currentUser = useCurrentUser()
+  const hideColors = currentUser?.hideColors ?? false
   const [isOpen, setIsOpen] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
   const initialEditingValue = (() => {
@@ -155,7 +165,7 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
   const assignmentName = scoreData.name
   const date = scoreData.dateDue
   const displayGrade = (scoreData.percentage !== undefined && scoreData.percentage !== null) ? scoreData.percentage : scoreData.score
-  const { grade, gradeColor } = gradeAndColor(displayGrade, scoreData.badges)
+  const { grade, gradeColor, textColor } = gradeAndColor(displayGrade, scoreData.badges, hideColors)
   const category = scoreData.category
   const badgeColors = {
     "missing": "bg-red-500",
@@ -224,7 +234,7 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
                   {impactBadge > 0 ? '+' : ''}{impactBadge.toFixed(2)}
                 </Badge>
               )}
-              <span className={`block font-semibold tracking-wide text-[1.35rem] text-white text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] min-w-[76px] ${gradeColor} ${scoreData.badges.includes('dropped') || scoreData.excluded ? 'line-through' : ''}`}>
+              <span className={`block font-semibold tracking-wide text-[1.35rem] ${textColor} text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] min-w-[76px] ${gradeColor} ${scoreData.badges.includes('dropped') || scoreData.excluded ? 'line-through' : ''}`}>
                 {grade}
               </span>
             </ItemActions>

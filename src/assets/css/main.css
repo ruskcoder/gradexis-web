@@ -9,3 +9,8 @@
 .delete {
     color: var(--destructive);
 }
+
+.grade-card [data-slot="progress-indicator"] {
+  background-color: white !important;
+  opacity: 0.4;
+}

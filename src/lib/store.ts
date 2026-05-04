@@ -45,6 +45,7 @@ export interface User {
   gradesView: 'card' | 'list';
   showPageTitles?: boolean;
   matchThemeWithLogo?: boolean;
+  hideColors?: boolean;
   bellSchedules: BellSchedule[];
   premium: boolean;
   lastLogin: Date | null;
@@ -78,6 +79,7 @@ const DEFAULT_USER: User = {
   gradesView: 'list',
   showPageTitles: true,
   matchThemeWithLogo: false,
+  hideColors: false,
   bellSchedules: [],
   premium: false,
   lastLogin: null,

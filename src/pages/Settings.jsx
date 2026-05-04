@@ -240,6 +240,15 @@ export default function Settings() {
               </div>
             </div>
           </div>
+
+          <div className="mt-6 flex items-center gap-2">
+            <Checkbox
+              id="hide-colors"
+              checked={!!user.hideColors}
+              onCheckedChange={(checked) => changeUserData('hideColors', !!checked)}
+            />
+            <Label htmlFor="hide-colors" className="cursor-pointer">Hide grade colors</Label>
+          </div>
         </section>
 
         <section>
