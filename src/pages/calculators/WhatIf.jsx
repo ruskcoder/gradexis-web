@@ -287,7 +287,7 @@ export const WhatIf = ({ selectedGrade }) => {
     }
 
     const assignmentName = manualName.trim() || `Untitled ${manualCategory}`
-    const totalPointsValue = 100 * weight
+    const totalPointsValue = 100
     const scoreValue = (percentage / 100) * totalPointsValue
 
     const newScore = {
@@ -365,7 +365,7 @@ export const WhatIf = ({ selectedGrade }) => {
         <CategoryGradeList>
           <Popover open={isAdding} onOpenChange={setIsAdding}>
             <PopoverTrigger asChild>
-              <Item className="border-dashed border-4 py-3 gap-2 max-w-[300px] min-w-[150px] cursor-pointer hover:bg-accent transition-colors" variant="outline">
+              <Item className="border-dashed border-4 py-3 gap-2 max-w-[300px] min-w-[150px] cursor-pointer hover:bg-accent transition-colors h-full" variant="outline">
                 <ItemContent className="gap-0 text-muted-foreground">
                   <ItemTitle className="text-3xl justify-center">Add <Plus className="w-8 h-8" /></ItemTitle>
                 </ItemContent>
