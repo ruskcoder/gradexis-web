@@ -1,10 +1,9 @@
-import hacDistricts from '@/lib/hac-districts.json';
 export const APP_NAME = 'Gradexis';
 export const PLATFORMS = ['hac'] as const;
 export const PLATFORM_MAPPING: Record<string, string> = {
     hac: 'HAC'
 };
-export const districts = [...hacDistricts];
+export const DISTRICTS_URL = '/districts.json';
 export const LOGIN_TYPES = ['credentials', 'classlink'] as const;
 export const API_URL = import.meta.env.VITE_API_URL;
 export const API_PLATFORM_ENDPOINTS: Record<typeof PLATFORMS[number], string> = {hac: '/v2/hac/'};

@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import '@/assets/css/login.css';
 import Wallpaper from '@/assets/wallpaper.jpg'
-import { districts, PLATFORM_MAPPING } from '@/lib/constants';
+import { DISTRICTS_URL, PLATFORM_MAPPING } from '@/lib/constants';
 import { login } from '@/lib/grades-api';
 import { useStore } from '@/lib/store';
 import { showWebNotificationsForUser, fetchReferralData } from '@/App';
@@ -38,6 +38,7 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [districts, setDistricts] = useState([]);
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -157,8 +158,15 @@ export default function Login() {
   useEffect(() => {
     changePage(0);
     setTimeout(() => {
-      document.documentElement.classList.remove('dark');  
+      document.documentElement.classList.remove('dark');
     }, 0);
+  }, []);
+
+  useEffect(() => {
+    fetch(DISTRICTS_URL)
+      .then((res) => res.json())
+      .then(setDistricts)
+      .catch((err) => console.error('Failed to load districts:', err));
   }, []);
 
   // Jump to login form when district info is restored from URL params
