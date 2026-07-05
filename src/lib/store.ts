@@ -64,6 +64,53 @@ export interface User {
   };
 }
 
+type GradesHistory = User['gradesStore']['history'];
+
+/**
+ * Append this load's per-course snapshots into the term history, immutably.
+ * If a course's latest snapshot is byte-identical to the incoming one, its
+ * timestamp is refreshed in place instead of pushing a duplicate. Shared by
+ * `addGradesStore` (which also resets initialTerm/termList) and
+ * `addGradesStoreLoad` (which preserves them).
+ */
+function mergeClassesIntoHistory(
+  history: GradesHistory,
+  term: string,
+  classes: any[]
+): GradesHistory {
+  const newHistory = { ...history };
+  newHistory[term] = newHistory[term] ? { ...newHistory[term] } : {};
+
+  for (const classData of classes) {
+    const courseKey = `${classData.course}|${classData.name}`;
+    const existing = newHistory[term][courseKey];
+    const courseHistory = existing ? [...existing] : [];
+    newHistory[term][courseKey] = courseHistory;
+
+    const snapshot = {
+      loadedAt: Date.now(),
+      average: classData.average,
+      categories: classData.categories,
+      scores: classData.scores,
+    };
+
+    const latest = courseHistory[courseHistory.length - 1];
+    const unchanged =
+      latest &&
+      JSON.stringify(latest.average) === JSON.stringify(classData.average) &&
+      JSON.stringify(latest.categories) === JSON.stringify(classData.categories) &&
+      JSON.stringify(latest.scores) === JSON.stringify(classData.scores);
+
+    if (unchanged) {
+      courseHistory[courseHistory.length - 1] = snapshot;
+    } else {
+      courseHistory.push(snapshot);
+    }
+  }
+
+  return newHistory;
+}
+
 const DEFAULT_USER: User = {
   loginType: '',
   username: '',
@@ -140,7 +187,7 @@ interface UserStore {
   getGradesStore: () => {
     initialTerm: string;
     termList: string[];
-    history: Record<string, Array<{ loadedAt: number; classes: any[] }>>;
+    history: GradesHistory;
   };
   clearGradesStore: () => void;
 }
@@ -335,59 +382,14 @@ export const useStore = create<UserStore>()(
       addGradesStore: (initialTerm: string, termList: string[], term: string, classes: any[]) => {
         set((state) => {
           const newUsers = [...state.users];
-          if (newUsers[state.currentUserIndex]) {
-            const currentUser = newUsers[state.currentUserIndex]!;
-            const newHistory = { ...currentUser.gradesStore.history };
-            if (!newHistory[term]) {
-              newHistory[term] = {};
-            } else {
-              newHistory[term] = { ...newHistory[term] };
-            }
-
-            for (const classData of classes) {
-              const courseKey = `${classData.course}|${classData.name}`;
-              if (!newHistory[term][courseKey]) {
-                newHistory[term][courseKey] = [];
-              } else {
-                newHistory[term][courseKey] = [...newHistory[term][courseKey]];
-              }
-
-              const courseHistory = newHistory[term][courseKey];
-              if (courseHistory && courseHistory.length > 0) {
-                const latestEntry = courseHistory[courseHistory.length - 1];
-                if (
-                  latestEntry &&
-                  JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
-                  JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
-                  JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
-                ) {
-
-                  courseHistory[courseHistory.length - 1] = {
-                    loadedAt: Date.now(),
-                    average: classData.average,
-                    categories: classData.categories,
-                    scores: classData.scores,
-                  };
-                  continue;
-                }
-              }
-
-              if (courseHistory) {
-                courseHistory.push({
-                  loadedAt: Date.now(),
-                  average: classData.average,
-                  categories: classData.categories,
-                  scores: classData.scores,
-                });
-              }
-            }
-
+          const currentUser = newUsers[state.currentUserIndex];
+          if (currentUser) {
             newUsers[state.currentUserIndex] = {
               ...currentUser,
               gradesStore: {
                 initialTerm,
                 termList,
-                history: newHistory,
+                history: mergeClassesIntoHistory(currentUser.gradesStore.history, term, classes),
               },
             } as User;
           }
@@ -398,59 +400,13 @@ export const useStore = create<UserStore>()(
       addGradesStoreLoad: (term: string, classes: any[]) => {
         set((state) => {
           const newUsers = [...state.users];
-          if (newUsers[state.currentUserIndex]) {
-            const currentUser = newUsers[state.currentUserIndex]!;
-            const newHistory = { ...currentUser.gradesStore.history };
-            if (!newHistory[term]) {
-              newHistory[term] = {};
-            } else {
-              newHistory[term] = { ...newHistory[term] };
-            }
-
-            for (const classData of classes) {
-              const courseKey = `${classData.course}|${classData.name}`;
-              if (!newHistory[term][courseKey]) {
-                newHistory[term][courseKey] = [];
-              } else {
-                newHistory[term][courseKey] = [...newHistory[term][courseKey]];
-              }
-
-              const courseHistory = newHistory[term][courseKey];
-              if (courseHistory && courseHistory.length > 0) {
-                const latestEntry = courseHistory[courseHistory.length - 1];
-
-                if (
-                  latestEntry &&
-                  JSON.stringify(latestEntry.average) === JSON.stringify(classData.average) &&
-                  JSON.stringify(latestEntry.categories) === JSON.stringify(classData.categories) &&
-                  JSON.stringify(latestEntry.scores) === JSON.stringify(classData.scores)
-                ) {
-
-                  courseHistory[courseHistory.length - 1] = {
-                    loadedAt: Date.now(),
-                    average: classData.average,
-                    categories: classData.categories,
-                    scores: classData.scores,
-                  };
-                  continue;
-                }
-              }
-
-              if (courseHistory) {
-                courseHistory.push({
-                  loadedAt: Date.now(),
-                  average: classData.average,
-                  categories: classData.categories,
-                  scores: classData.scores,
-                });
-              }
-            }
-
+          const currentUser = newUsers[state.currentUserIndex];
+          if (currentUser) {
             newUsers[state.currentUserIndex] = {
               ...currentUser,
               gradesStore: {
                 ...currentUser.gradesStore,
-                history: newHistory,
+                history: mergeClassesIntoHistory(currentUser.gradesStore.history, term, classes),
               },
             } as User;
           }
@@ -495,26 +451,19 @@ export const useStore = create<UserStore>()(
       },
 
       getGradesStore: () => {
+        const emptyStore = { initialTerm: '', termList: [], history: {} as GradesHistory };
         const { users, currentUserIndex } = get();
         if (users.length === 0 || currentUserIndex < 0 || currentUserIndex >= users.length) {
-          return {
-            initialTerm: '',
-            termList: [],
-            history: {} as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
-          };
+          return emptyStore;
         }
         const store = users[currentUserIndex]?.gradesStore;
         if (!store) {
-          return {
-            initialTerm: '',
-            termList: [],
-            history: {} as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
-          };
+          return emptyStore;
         }
         return {
           initialTerm: store.initialTerm,
           termList: store.termList,
-          history: store.history as unknown as Record<string, Array<{ loadedAt: number; classes: any[] }>>,
+          history: store.history,
         };
       },
 

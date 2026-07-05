@@ -37,10 +37,11 @@ export function reconstructClassesFromHistory(term: string): any[] {
   // For each course in the history
   for (const courseKey in termHistory) {
     const courseHistory = termHistory[courseKey];
-    if (courseHistory.length === 0) continue;
+    if (!courseHistory || courseHistory.length === 0) continue;
 
     // Get the latest entry for this course
     const latestEntry = courseHistory[courseHistory.length - 1];
+    if (!latestEntry) continue;
     const [course, name] = courseKey.split('|');
 
     // Reconstruct the class object
@@ -68,9 +69,9 @@ export function getLatestGradesLoad(term: string): GradesLoad | null {
   let latestLoadedAt = 0;
   for (const courseKey in termHistory) {
     const courseHistory = termHistory[courseKey];
-    if (courseHistory.length > 0) {
+    if (courseHistory && courseHistory.length > 0) {
       const latestEntry = courseHistory[courseHistory.length - 1];
-      if (latestEntry.loadedAt > latestLoadedAt) {
+      if (latestEntry && latestEntry.loadedAt > latestLoadedAt) {
         latestLoadedAt = latestEntry.loadedAt;
       }
     }
@@ -105,6 +106,7 @@ export function getGradesLoadHistory(term: string): GradesLoad[] {
 
   for (const courseKey in termHistory) {
     const courseHistory = termHistory[courseKey];
+    if (!courseHistory) continue;
     for (const entry of courseHistory) {
       allLoadTimestamps.add(entry.loadedAt);
     }
@@ -116,7 +118,7 @@ export function getGradesLoadHistory(term: string): GradesLoad[] {
     const classesAtTime: any[] = [];
     for (const courseKey in termHistory) {
       const courseHistory = termHistory[courseKey];
-      const entryAtTime = courseHistory.find(e => e.loadedAt === timestamp);
+      const entryAtTime = courseHistory?.find(e => e.loadedAt === timestamp);
       if (entryAtTime) {
         const [course, name] = courseKey.split('|');
         classesAtTime.push({
