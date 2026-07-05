@@ -11,35 +11,38 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useCurrentUser } from "@/lib/store"
+import { formatGrade } from "@/lib/grade-display"
+
+// Mirrors the mobile app's grade-category-color.ts — covers both the short
+// ("major"/"minor"/"other") and the "<x> grade" category names schools return.
+const CATEGORY_COLORS = {
+  "major": "#a855f7",
+  "application grade": "#a855f7",
+  "minor": "#22c55e",
+  "minor grade": "#22c55e",
+  "other": "#eab308",
+  "major grade": "#eab308",
+}
 
 export const categoryColor = (category) => {
-  switch (category.toLowerCase()) {
-    case "major":
-      return "#a855f7" 
-
-    case "minor":
-      return "#22c55e" 
-
-    case "other":
-      return "#eab308" 
-
-    default:
-      return "#6b7280" 
-
-  }
+  return CATEGORY_COLORS[category.toLowerCase()] ?? "#6b7280"
 }
 
 export function RingGradeStat({ grade, whatif = false, whatifGrade = null }) {
-  grade = parseFloat(grade).toPrecision(4)
+  const currentUser = useCurrentUser()
+  const numberDisplay = currentUser?.numberDisplay ?? 'decimal'
+  const numeric = parseFloat(grade)
+  const displayGrade = formatGrade(numeric, numberDisplay)
   return (
     <Item className="block w-fit" variant="outline">
       <ItemContent className="w-fit">
         <ProgressCircle
           className="w-40 h-40"
-          value={grade}
-          text={grade}
+          value={numeric}
+          text={displayGrade}
           label={whatif ? "From": "Overall"}
-          label2={ whatif ? `${whatifGrade}` : null }
+          label2={ whatif && whatifGrade !== null && whatifGrade !== undefined ? formatGrade(parseFloat(whatifGrade), numberDisplay) : null }
           key="ring"
         />
       </ItemContent>
@@ -74,10 +77,12 @@ export function CategoryGradeList({ children }) {
 }
 
 export function CategoryGradeStat({ categoryData }) {
+  const currentUser = useCurrentUser()
+  const numberDisplay = currentUser?.numberDisplay ?? 'decimal'
   const categoryName = categoryData.category || Object.keys(categoryData)[0]
   const data = typeof categoryData.category === 'string' ? categoryData : categoryData[categoryName]
 
-  const percent = parseFloat(data.percent || data.categoryPoints || 0).toPrecision(4)
+  const percent = formatGrade(parseFloat(data.percent || data.categoryPoints || 0), numberDisplay)
 
   return (
     <Popover>

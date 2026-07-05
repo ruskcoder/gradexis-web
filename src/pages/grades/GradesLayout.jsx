@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'motion/react'
 import { Progress } from "@/components/ui/progress"
 import { GradesItem, GradesList } from '@/components/custom/grades-item'
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
@@ -19,6 +19,27 @@ import { getClasses } from '@/lib/grades-api'
 import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData } from '@/lib/grades-store'
 import { PremiumDialog } from '@/components/custom/premium-dialog'
 import { ChevronLeft, GitCommitHorizontal } from 'lucide-react'
+
+// Matches the CSS `ease` used across the app so the term cross-fade curve is
+// identical to the rest of the UI. Mirrors the mobile app's TermPageShift: the
+// outgoing page drifts out toward the travel direction while the incoming page
+// slides in from the opposite edge, the two overlapping in a cross-fade.
+const TERM_EASE = [0.25, 0.1, 0.25, 1]
+const termPageVariants = {
+  enter: (dir) => ({ opacity: 0, x: dir * 28 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir) => ({ opacity: 0, x: dir * -28 }),
+}
+// Staggered fade-up reveal for the grade list/cards, mirroring the mobile
+// cascade — each item rises 12px into place a beat after the previous.
+const gradesListContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.035 } },
+}
+const gradeItemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: TERM_EASE } },
+}
 
 export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }) {
   const [terms, setTerms] = useState([]);
@@ -36,6 +57,8 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
   const navigate = useNavigate();
   const abortControllerRef = useRef({});
   const userHasSelectedTermRef = useRef(false);
+  const directionRef = useRef(0);
+  const animationsEnabled = user ? user.animationsEnabled !== false : true;
   const isWhatIfMode = location.pathname === '/grades/whatif';
   const isTimeTravelMode = location.pathname === '/statistics/timetravel';
   const isTimelineMode = location.pathname === '/statistics/timeline';
@@ -107,6 +130,9 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
 
   const handleTabChange = (term) => {
     userHasSelectedTermRef.current = true;
+    const from = terms.indexOf(currentTerm);
+    const to = terms.indexOf(term);
+    directionRef.current = from === -1 || to === -1 ? 0 : Math.sign(to - from);
     setCurrentTerm(term);
     setSelectedGrade(null);
     if (classesDataByTerm[term] || loadingTerms[term]) return;
@@ -194,49 +220,68 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                   </TabsTrigger>
                 ))}
               </TabsList>}
-              <div className="flex-1 overflow-y-auto">
-                {(loadingTerms[currentTerm] || loadingTerms.initial) && <div className='flex flex-col items-center justify-center'>
-                  <div className='w-full text-center my-2'>{progressByTerm[currentTerm]?.message || progressByTerm.initial?.message}</div>
-                  <Progress value={progressByTerm[currentTerm]?.percent || progressByTerm.initial?.percent || 0} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={handleLoadFromStorage}
-                    disabled={!hasStorageData(loadingTerms.initial ? getInitialTerm() : currentTerm)}
+              <div className="flex-1 overflow-y-auto relative">
+                <AnimatePresence mode="popLayout" custom={directionRef.current} initial={false}>
+                  <motion.div
+                    key={currentTerm || 'initial'}
+                    custom={directionRef.current}
+                    variants={animationsEnabled ? termPageVariants : undefined}
+                    initial={animationsEnabled ? 'enter' : false}
+                    animate={animationsEnabled ? 'center' : undefined}
+                    exit={animationsEnabled ? 'exit' : undefined}
+                    transition={{ duration: 0.24, ease: TERM_EASE }}
                   >
-                    Load from Storage
-                  </Button>
-                </div>}
-                {!loadingTerms[currentTerm] && !loadingTerms.initial && classesDataByTerm[currentTerm] && (
-                  <TabsContent value={currentTerm} className="mt-2">
-                    {storageMode[currentTerm] && (
-                      <div className="mb-4 p-3 bg-muted rounded-lg text-sm text-muted-foreground">
-                        Last Loaded: {formatDate(lastLoadedDate[currentTerm])}
-                      </div>
-                    )}
-                    {classesDataByTerm[currentTerm].length === 0 ? (
-                      <div className="flex items-center justify-center h-16">
-                        <p className="text-muted-foreground">No classes to display</p>
-                      </div>
-                    ) : (
-                      <GradesList variant={user.gradesView}>
-                        {classesDataByTerm[currentTerm].map((course, index) => (
-                          <div
-                            key={index}
-                            onClick={() => course.average && setSelectedGrade(course)}
-                          >
-                            <GradesItem
-                              courseName={course.name}
-                              id={course.course}
-                              grade={course.average}
-                            />
+                    {(loadingTerms[currentTerm] || loadingTerms.initial) && <div className='flex flex-col items-center justify-center'>
+                      <div className='w-full text-center my-2'>{progressByTerm[currentTerm]?.message || progressByTerm.initial?.message}</div>
+                      <Progress value={progressByTerm[currentTerm]?.percent || progressByTerm.initial?.percent || 0} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={handleLoadFromStorage}
+                        disabled={!hasStorageData(loadingTerms.initial ? getInitialTerm() : currentTerm)}
+                      >
+                        Load from Storage
+                      </Button>
+                    </div>}
+                    {!loadingTerms[currentTerm] && !loadingTerms.initial && classesDataByTerm[currentTerm] && (
+                      <div className="mt-2">
+                        {storageMode[currentTerm] && (
+                          <div className="mb-4 p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                            Last Loaded: {formatDate(lastLoadedDate[currentTerm])}
                           </div>
-                        ))}
-                      </GradesList>
+                        )}
+                        {classesDataByTerm[currentTerm].length === 0 ? (
+                          <div className="flex items-center justify-center h-16">
+                            <p className="text-muted-foreground">No classes to display</p>
+                          </div>
+                        ) : (
+                          <motion.div
+                            variants={animationsEnabled ? gradesListContainer : undefined}
+                            initial={animationsEnabled ? 'hidden' : false}
+                            animate={animationsEnabled ? 'show' : undefined}
+                          >
+                            <GradesList variant={user.gradesView}>
+                              {classesDataByTerm[currentTerm].map((course, index) => (
+                                <motion.div
+                                  key={index}
+                                  variants={animationsEnabled ? gradeItemVariants : undefined}
+                                  onClick={() => course.average && setSelectedGrade(course)}
+                                >
+                                  <GradesItem
+                                    courseName={course.name}
+                                    id={course.course}
+                                    grade={course.average}
+                                  />
+                                </motion.div>
+                              ))}
+                            </GradesList>
+                          </motion.div>
+                        )}
+                      </div>
                     )}
-                  </TabsContent>
-                )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </Tabs>
           </ResizablePanel>

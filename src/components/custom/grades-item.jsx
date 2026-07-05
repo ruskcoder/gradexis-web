@@ -25,38 +25,53 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useCurrentUser } from "@/lib/store"
+import { formatGrade } from "@/lib/grade-display"
 import { Trash2, Edit, Save } from 'lucide-react'
 
+// Scrim overlaid on a colored grade chip so the "hide colors" primary tint (and
+// the card header) reads as a rich muted tone rather than a flat vivid block —
+// mirrors the mobile app. 30% black in light mode, 60% in dark.
+const GRADE_SCRIM = "bg-black/30 dark:bg-black/60"
+
 export const gradeAndColor = (grade, badges = null, hideColors = false) => {
+  let numericGrade = null
   if (grade === null || typeof grade === 'undefined' || grade === '') {
     grade = "···"
   } else {
-    grade = parseFloat(grade).toPrecision(4)
+    numericGrade = parseFloat(grade)
+    grade = numericGrade.toPrecision(4)
   }
 
-  if (grade === "···") return { grade: grade, gradeColor: "bg-gray-400", textColor: "text-white", bgColor: "#9ca3af" };
+  if (grade === "···") return { grade, numericGrade, gradeColor: "bg-gray-400", textColor: "text-white", bgColor: "#9ca3af" };
 
   if (badges && badges.includes("exempt")) {
-    return { grade: "X", gradeColor: "bg-sky-500", textColor: "text-white", bgColor: "#0ea5e9" }
+    return { grade: "X", numericGrade, gradeColor: "bg-sky-500", textColor: "text-white", bgColor: "#0ea5e9" }
   }
 
   if (badges && (badges.includes("dropped") || badges.includes("excluded"))) {
-    return { grade: grade, gradeColor: "bg-gray-400", textColor: "text-white", bgColor: "#9ca3af" }
+    return { grade, numericGrade, gradeColor: "bg-gray-400", textColor: "text-white", bgColor: "#9ca3af" }
   }
 
   if (badges && badges.includes("missing")) {
-    return { grade: grade, gradeColor: "bg-red-500", textColor: "text-white", bgColor: "#ef4444" }
+    return { grade, numericGrade, gradeColor: "bg-red-500", textColor: "text-white", bgColor: "#ef4444" }
   }
 
   if (hideColors) {
-    return { grade: grade, gradeColor: "bg-primary", textColor: "text-primary-foreground", bgColor: "var(--primary)" }
+    return { grade, numericGrade, gradeColor: "bg-primary", textColor: "text-white", bgColor: "var(--primary)" }
   }
 
-  if (grade >= 90) return { grade: grade, gradeColor: "bg-green-500", textColor: "text-white", bgColor: "#22c55e" }
-  if (grade >= 80) return { grade: grade, gradeColor: "bg-blue-500", textColor: "text-white", bgColor: "#3b82f6" }
-  if (grade >= 70) return { grade: grade, gradeColor: "bg-yellow-500", textColor: "text-white", bgColor: "#eab308" }
-  return { grade: grade, gradeColor: "bg-red-500", textColor: "text-white", bgColor: "#ef4444" }
+  if (grade >= 90) return { grade, numericGrade, gradeColor: "bg-green-500", textColor: "text-white", bgColor: "#22c55e" }
+  if (grade >= 80) return { grade, numericGrade, gradeColor: "bg-blue-500", textColor: "text-white", bgColor: "#3b82f6" }
+  if (grade >= 70) return { grade, numericGrade, gradeColor: "bg-yellow-500", textColor: "text-white", bgColor: "#eab308" }
+  return { grade, numericGrade, gradeColor: "bg-red-500", textColor: "text-white", bgColor: "#ef4444" }
 }
+
+// Applies the user's Number Display preference to an already-color-resolved
+// grade, leaving placeholder/exempt markers ("···", "X") untouched.
+const displayGradeValue = (gradeValue, numericGrade, numberDisplay) =>
+  numericGrade !== null && numericGrade !== undefined && gradeValue !== "···" && gradeValue !== "X"
+    ? formatGrade(numericGrade, numberDisplay)
+    : gradeValue
 
 export function GradesList({ variant, children }) {
   const width = variant === "card" ? '175px' : '250px';
@@ -87,7 +102,9 @@ export function GradesList({ variant, children }) {
 export function GradesItem({ courseName, id, grade, variant }) {
   const currentUser = useCurrentUser()
   const hideColors = currentUser?.hideColors ?? false
-  const { grade: gradeValue, gradeColor, textColor, bgColor } = gradeAndColor(grade, null, hideColors)
+  const numberDisplay = currentUser?.numberDisplay ?? 'decimal'
+  const { grade: gradeValue, numericGrade, gradeColor, textColor, bgColor } = gradeAndColor(grade, null, hideColors)
+  const displayGrade = displayGradeValue(gradeValue, numericGrade, numberDisplay)
   return variant === "card" ? (
     <Card className="grade-card w-full pt-0 overflow-hidden pb-2 gap-3 max-w-[350px] min-w-[175px] cursor-pointer hover:bg-accent transition-colors">
       <CardHeader
@@ -99,11 +116,11 @@ export function GradesItem({ courseName, id, grade, variant }) {
           className="z-1 absolute inset-0 pointer-events-none bg-black/30 dark:bg-black/60"
         />
         <span className={`text-[2.5rem]/10 relative z-2 ${textColor}`}>
-          {gradeValue}
+          {displayGrade}
         </span>
         <div className={`z-2 flex w-full text-sm justify-center items-center gap-2`}>
           <span className={textColor}>0%</span>
-          <Progress value={gradeValue} className="border-1 border-white h-2" dark={true} />
+          <Progress value={numericGrade ?? 0} className="border-1 border-white h-2" dark={true} />
           <span className={textColor}>100%</span>
         </div>
       </CardHeader>
@@ -122,8 +139,9 @@ export function GradesItem({ courseName, id, grade, variant }) {
           </ItemDescription>
         </ItemContent>
         <ItemActions className="flex-shrink-0">
-          <span className={`block font-semibold tracking-wide text-[1.5rem] ${textColor} text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] ${gradeColor} min-w-[86px]`}>
-            {gradeValue}
+          <span className={`relative overflow-hidden block font-semibold tracking-wide text-[1.5rem] ${textColor} text-center rounded-sm px-2 py-[2px] mr-[4px] ${gradeColor} min-w-[86px]`}>
+            {hideColors && <span aria-hidden className={`absolute inset-0 pointer-events-none ${GRADE_SCRIM}`} />}
+            <span className="relative z-1">{displayGrade}</span>
           </span>
         </ItemActions>
       </div>
@@ -146,6 +164,7 @@ export function ClassGradesList({ children }) {
 export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditPercentage, impactBadge }) {
   const currentUser = useCurrentUser()
   const hideColors = currentUser?.hideColors ?? false
+  const numberDisplay = currentUser?.numberDisplay ?? 'decimal'
   const [isOpen, setIsOpen] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
   const initialEditingValue = (() => {
@@ -165,7 +184,8 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
   const assignmentName = scoreData.name
   const date = scoreData.dateDue
   const displayGrade = (scoreData.percentage !== undefined && scoreData.percentage !== null) ? scoreData.percentage : scoreData.score
-  const { grade, gradeColor, textColor } = gradeAndColor(displayGrade, scoreData.badges, hideColors)
+  const { grade, numericGrade, gradeColor, textColor } = gradeAndColor(displayGrade, scoreData.badges, hideColors)
+  const formattedGrade = displayGradeValue(grade, numericGrade, numberDisplay)
   const category = scoreData.category
   const badgeColors = {
     "missing": "bg-red-500",
@@ -234,8 +254,9 @@ export function ClassGradesItem({ scoreData, onRemove, onToggleExcluded, onEditP
                   {impactBadge > 0 ? '+' : ''}{impactBadge.toFixed(2)}
                 </Badge>
               )}
-              <span className={`block font-semibold tracking-wide text-[1.35rem] ${textColor} text-center rounded-sm min-w-[4rem] px-2 py-[2px] mr-[4px] min-w-[76px] ${gradeColor} ${scoreData.badges.includes('dropped') || scoreData.excluded ? 'line-through' : ''}`}>
-                {grade}
+              <span className={`relative overflow-hidden block font-semibold tracking-wide text-[1.35rem] ${textColor} text-center rounded-sm px-2 py-[2px] mr-[4px] min-w-[76px] ${gradeColor} ${scoreData.badges.includes('dropped') || scoreData.excluded ? 'line-through' : ''}`}>
+                {hideColors && <span aria-hidden className={`absolute inset-0 pointer-events-none ${GRADE_SCRIM}`} />}
+                <span className="relative z-1">{formattedGrade}</span>
               </span>
             </ItemActions>
           </div>

@@ -11,10 +11,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { gradeAndColor, ClassGradesList, ClassGradesItem } from '@/components/custom/grades-item';
 import { categoryColor } from '@/components/custom/grades-stats';
+import { formatGrade } from '@/lib/grade-display';
 import { useCurrentUser } from '@/lib/store';
 
 export const TimelinePage = ({ selectedGrade, term }) => {
   const currentUser = useCurrentUser();
+  const numberDisplay = currentUser?.numberDisplay ?? 'decimal';
   const navigate = useNavigate();
 
   const { events: timelineEvents, courseHistory } = useMemo(() => {
@@ -121,7 +123,10 @@ export const TimelinePage = ({ selectedGrade, term }) => {
   };
 
   const AverageItem = ({ prevAvg, currAvg, change, isInitial }) => {
-    const { grade: gradeValue, gradeColor } = gradeAndColor(currAvg);
+    const { grade: gradeValue, numericGrade, gradeColor } = gradeAndColor(currAvg);
+    const displayGrade = numericGrade !== null && numericGrade !== undefined && gradeValue !== "···" && gradeValue !== "X"
+      ? formatGrade(numericGrade, numberDisplay)
+      : gradeValue;
 
     return (
       <Item variant="outline" className="h-full w-fit p-3 gap-3 flex-nowrap">
@@ -130,7 +135,7 @@ export const TimelinePage = ({ selectedGrade, term }) => {
             <span
               className={`block font-semibold tracking-wide text-[1.5rem] text-white text-center rounded-sm px-2 py-[2px] ${gradeColor} min-w-[86px]`}
             >
-              {gradeValue}
+              {displayGrade}
             </span>
           </ItemTitle>
         </ItemContent>
@@ -144,7 +149,7 @@ export const TimelinePage = ({ selectedGrade, term }) => {
   };
 
   const CategoryItem = ({ category, prevGrade, currGrade, change, isInitial }) => {
-    const percent = parseFloat(currGrade).toPrecision(4);
+    const percent = formatGrade(parseFloat(currGrade), numberDisplay);
     return (
       <Item className={`h-full p-2 max-w-[300px] transition-colors flex-nowrap gap-2 ${isInitial ? "pr-3" : ""}`} variant="outline">
         <ItemActions className="pr-1">

@@ -46,6 +46,8 @@ export interface User {
   showPageTitles?: boolean;
   matchThemeWithLogo?: boolean;
   hideColors?: boolean;
+  numberDisplay?: 'decimal' | 'rounded' | 'letter' | 'letter+';
+  animationsEnabled?: boolean;
   bellSchedules: BellSchedule[];
   premium: boolean;
   lastLogin: Date | null;
@@ -80,6 +82,8 @@ const DEFAULT_USER: User = {
   showPageTitles: true,
   matchThemeWithLogo: false,
   hideColors: false,
+  numberDisplay: 'decimal',
+  animationsEnabled: true,
   bellSchedules: [],
   premium: false,
   lastLogin: null,

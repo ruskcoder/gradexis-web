@@ -241,6 +241,30 @@ export default function Settings() {
             </div>
           </div>
 
+          <div className="mt-8 max-w-xs">
+            <Label>Number display</Label>
+            <p className='text-xs text-muted-foreground mt-1'>How numeric grades are shown across the app.</p>
+            <div className="mt-2">
+              <Select
+                value={user.numberDisplay || 'decimal'}
+                onValueChange={(val) => changeUserData('numberDisplay', val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select display" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Number Display</SelectLabel>
+                    <SelectItem value="decimal">Decimal (96.6)</SelectItem>
+                    <SelectItem value="rounded">Rounded (97)</SelectItem>
+                    <SelectItem value="letter">Letter (A)</SelectItem>
+                    <SelectItem value="letter+">Letter+ (A+)</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="mt-6 flex items-center gap-2">
             <Checkbox
               id="hide-colors"
@@ -255,7 +279,7 @@ export default function Settings() {
           <h2 className="text-lg font-semibold">General</h2>
           <p className="text-sm text-muted-foreground mt-1">General app options.</p>
 
-          <div className="mt-4 flex items-center gap-4">
+          <div className="mt-4 flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={!!user.showPageTitles}
@@ -264,6 +288,16 @@ export default function Settings() {
               <div>
                 <Label>Show page titles</Label>
                 <div className="text-sm text-muted-foreground">Show or hide page titles across the app.</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={user.animationsEnabled !== false}
+                onCheckedChange={(checked) => changeUserData('animationsEnabled', !!checked)}
+              />
+              <div>
+                <Label>Enable animations</Label>
+                <div className="text-sm text-muted-foreground">Play transitions when switching grade terms and revealing grades.</div>
               </div>
             </div>
           </div>

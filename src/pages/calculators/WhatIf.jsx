@@ -360,7 +360,7 @@ export const WhatIf = ({ selectedGrade }) => {
         <RingGradeStat
           grade={parseFloat(current.average || 0).toPrecision(4)}
           whatif={true}
-          whatifGrade={originalAverage !== null ? Number(originalAverage).toPrecision(4) : undefined}
+          whatifGrade={originalAverage !== null ? originalAverage : undefined}
         />
         <CategoryGradeList>
           <Popover open={isAdding} onOpenChange={setIsAdding}>
