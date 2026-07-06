@@ -1,4 +1,4 @@
-import { LOGIN_TYPES, API_URL, API_PLATFORM_ENDPOINTS, LOGIN_ENDPOINT, PLATFORMS, CLASSES_ENDPOINT, ATTENDANCE_ENDPOINT, SCHEDULE_ENDPOINT, TRANSCRIPT_ENDPOINT, REPORT_CARD_ENDPOINT, PROGRESS_REPORT_ENDPOINT, TEACHERS_ENDPOINT } from "@/lib/constants";
+import { LOGIN_TYPES, API_URL, API_PLATFORM_ENDPOINTS, LOGIN_ENDPOINT, DISTRICTS_ENDPOINT, PLATFORMS, CLASSES_ENDPOINT, SINGLE_CLASS_ENDPOINT, ATTENDANCE_ENDPOINT, SCHEDULE_ENDPOINT, BELL_SCHEDULE_ENDPOINT, TRANSCRIPT_ENDPOINT, REPORT_CARD_ENDPOINT, PROGRESS_REPORT_ENDPOINT, TEACHERS_ENDPOINT } from "@/lib/constants";
 import { pathMerge } from "@/lib/utils";
 import { setSession, currentUser, getSession, useStore } from "@/lib/store";
 import { initializeGradesStore, addGradesLoad } from "@/lib/grades-store";
@@ -24,10 +24,18 @@ function setCachedValue(key: string, value: any): void {
  * Keeps user data intact, only requires password update
  */
 function handleAuthError(response: Response, data: any, user: any): void {
-  const isAuthError = response.status === 401 || 
-    data?.message?.includes('Invalid') ||
-    data?.message?.includes('password') ||
-    data?.message?.includes('Session');
+  const msg: string = data?.message || '';
+  const isAuthError = response.status === 401 ||
+    // A data call needing a fresh ClassLink 2FA answer can't be resolved inline —
+    // bounce to the login screen to re-verify.
+    data?.mfaRequired === true ||
+    msg.includes('Invalid') ||
+    msg.includes('password') ||
+    msg.includes('Session') ||
+    msg.includes('PIN') ||
+    msg.includes('image') ||
+    msg.includes('two-factor') ||
+    msg.includes('ClassLink');
 
   if (isAuthError && user?.username) {
     // Keep user in store, just redirect to login to update password
@@ -38,6 +46,7 @@ function handleAuthError(response: Response, data: any, user: any): void {
     if (user.link) params.set('link', user.link);
     if (user.platform) params.set('platform', user.platform);
     if (user.loginType) params.set('loginType', user.loginType);
+    if (user.code) params.set('code', user.code);
     
     const loginUrl = `/login?${params.toString()}`;
     window.location.href = loginUrl;
@@ -46,13 +55,28 @@ function handleAuthError(response: Response, data: any, user: any): void {
   }
 }
 
+/**
+ * Authenticate against a platform. Returns the raw API response. Two non-error
+ * shapes the caller must handle:
+ *   - `{ success: true, ... }`  — logged in.
+ *   - `{ mfaRequired: true, mfaType, icons? }` — a ClassLink second factor is
+ *     needed. The mid-challenge session is persisted here; the caller shows the
+ *     2FA prompt and calls `login` again with `loginDetails.clMFA` set to finish.
+ *
+ * For `classlinkCredentials` the first attempt is sent as a *fresh* login (empty
+ * session); only the 2FA follow-up (`clMFA` present) reuses the stored challenge
+ * session, so a leftover session can't hijack a new ClassLink login.
+ */
 export async function login(
   platform: Platform,
   loginType: LoginType,
   loginDetails: Record<string, string>,
   referralCode: string = ''
 ) {
-  const session = getSession();
+  const isClassLinkCreds = loginType === 'classlinkCredentials';
+  const isMfaResume = isClassLinkCreds && !!loginDetails.clMFA;
+  const session = isClassLinkCreds && !isMfaResume ? {} : getSession();
+
   const body = {
     loginType: loginType,
     loginData: loginDetails,
@@ -74,11 +98,42 @@ export async function login(
 
   const data = await response.json();
 
+  // A 2FA challenge comes back as `success: false, mfaRequired: true`. Persist
+  // the challenge session and hand it back rather than throwing.
+  if (data?.mfaRequired) {
+    if (data.session) setSession(data.session);
+    return data;
+  }
+
   if (!response.ok || data.success == false) {
     throw new Error(data.message || 'Login failed with status code ' + response.status);
   }
   if (data.session) setSession(data.session);
   return data;
+}
+
+/**
+ * Ask the API whether a portal `link` fronts multiple districts (a shared HAC
+ * login `<select>`). Used by the Custom-login flow's "fetch details" step.
+ * Never throws — on any failure reports a single-district link.
+ */
+export async function fetchDistrictDetails(
+  platform: Platform,
+  link: string
+): Promise<{ multiple: boolean; districts: { name: string; value: string }[] }> {
+  try {
+    const url = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[platform], DISTRICTS_ENDPOINT);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loginData: { link } }),
+    });
+    const data = await response.json();
+    if (!response.ok || data.success === false) return { multiple: false, districts: [] };
+    return { multiple: !!data.multiple, districts: data.districts || [] };
+  } catch {
+    return { multiple: false, districts: [] };
+  }
 }
 
 /**
@@ -97,6 +152,9 @@ async function fetchEndpoint(
     throw new Error('No user logged in');
   }
 
+  // Multi-student portals: pin every request to the chosen student.
+  if (user.studentId) options = { ...options, studentId: user.studentId };
+
   const cacheKey = generateCacheKey(endpoint, options);
   const cachedData = getCachedValue(cacheKey);
   if (cachedData) {
@@ -109,7 +167,11 @@ async function fetchEndpoint(
       username: user.username,
       password: user.password,
       link: user.link,
-      clsession: user.clsession
+      clsession: user.clsession,
+      // Carried so the API can silently re-run a ClassLink login (clearing 2FA
+      // with the stored answer) if the portal session has expired.
+      code: user.code,
+      clMFA: user.clMFA
     },
     options,
     session: getSession()
@@ -147,7 +209,8 @@ export async function* getClasses(term?: string) {
     throw new Error('No user logged in');
   }
 
-  const options = { term: term || '' };
+  const options: Record<string, any> = { term: term || '' };
+  if (user.studentId) options.studentId = user.studentId;
   const cacheKey = generateCacheKey(CLASSES_ENDPOINT, options);
 
   const cachedData = getCachedValue(cacheKey);
@@ -162,7 +225,9 @@ export async function* getClasses(term?: string) {
       username: user.username,
       password: user.password,
       link: user.link,
-      clsession: user.clsession
+      clsession: user.clsession,
+      code: user.code,
+      clMFA: user.clMFA
     },
     options: options,
     session: session,
@@ -252,8 +317,22 @@ export async function* getClasses(term?: string) {
   }
 }
 
+/**
+ * Fetch one class's detailed assignments/categories for a term. Used by portals
+ * whose /classes response carries averages only (scoresIncluded: false), e.g.
+ * Skyward. `term` is the effective label — a subterm (PR1) when one is selected,
+ * otherwise the top-level term (1ST) — which the API routes to the right bucket.
+ */
+export function getSingleClass(course: string, term: string) {
+  return fetchEndpoint(SINGLE_CLASS_ENDPOINT, 'class', { course, term });
+}
+
 export function getSchedule() {
   return fetchEndpoint(SCHEDULE_ENDPOINT, 'schedule');
+}
+
+export function getBellSchedule() {
+  return fetchEndpoint(BELL_SCHEDULE_ENDPOINT, 'bell schedule');
 }
 
 export function getTranscript() {

@@ -6,6 +6,18 @@
     "loginType": "credentials"
   },
   {
+    "name": "Houston ISD",
+    "platform": "powerschool",
+    "link": "https://hisdconnect.powerschool.com/",
+    "loginType": "credentials"
+  },
+  {
+    "name": "Spring Branch ISD",
+    "platform": "skyward-legacy",
+    "link": "https://skyward.springbranchisd.com/",
+    "loginType": "credentials"
+  },
+  {
     "name": "Cypress Fairbanks ISD",
     "platform": "hac",
     "link": "https://home-access.cfisd.net/",

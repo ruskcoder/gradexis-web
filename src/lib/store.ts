@@ -29,12 +29,25 @@ export interface Shortcut {
 }
 
 export interface User {
-  loginType: '' | 'credentials' | 'classlink';
+  loginType: '' | 'credentials' | 'classlink' | 'classlinkCredentials';
   username: string;
   password: string;
   platform: Platform;
   link: string;
   clsession: string;
+  // ClassLink district code (trailing segment of a launchpad link), sent as
+  // `code` for `classlinkCredentials` logins. Empty for other login types.
+  code: string;
+  // Stored answer to this account's ClassLink 2FA challenge (a fixed PIN string
+  // or the chosen icon filename) so re-auth on page load is silent.
+  clMFA: string;
+  // Which kind of 2FA this account uses ('pin' | 'image' | '').
+  mfaType: '' | 'pin' | 'image';
+  // Multi-student portals (e.g. a PowerSchool parent account): the chosen
+  // student's id, threaded into every data request; `students` is the full
+  // roster so the header/settings can offer a switcher.
+  studentId?: string;
+  students?: Array<{ id: string; name: string }>;
   name: string;
   avatar: string;
   district: string;
@@ -67,11 +80,40 @@ export interface User {
 type GradesHistory = User['gradesStore']['history'];
 
 /**
- * Append this load's per-course snapshots into the term history, immutably.
- * If a course's latest snapshot is byte-identical to the incoming one, its
- * timestamp is refreshed in place instead of pushing a duplicate. Shared by
- * `addGradesStore` (which also resets initialTerm/termList) and
- * `addGradesStoreLoad` (which preserves them).
+ * Push one snapshot into a term's per-course history, deduping against an
+ * identical latest entry (refresh its timestamp instead of appending).
+ */
+function pushSnapshot(
+  termBucket: Record<string, Array<{ loadedAt: number; average: any; categories: any; scores: any[] }>>,
+  courseKey: string,
+  snapshot: { loadedAt: number; average: any; categories: any; scores: any[] }
+): void {
+  const courseHistory = termBucket[courseKey] ? [...termBucket[courseKey]] : [];
+  termBucket[courseKey] = courseHistory;
+  const latest = courseHistory[courseHistory.length - 1];
+  const unchanged =
+    latest &&
+    JSON.stringify(latest.average) === JSON.stringify(snapshot.average) &&
+    JSON.stringify(latest.categories) === JSON.stringify(snapshot.categories) &&
+    JSON.stringify(latest.scores) === JSON.stringify(snapshot.scores);
+  if (unchanged) courseHistory[courseHistory.length - 1] = snapshot;
+  else courseHistory.push(snapshot);
+}
+
+/**
+ * Append this load's per-course snapshots into the term history, immutably —
+ * platform-agnostic so one storage model serves every portal:
+ *
+ *  - Inline single-term data (HAC's /classes, or any /single-class detail):
+ *    the class carries `average`/`categories`/`scores` for ONE term → stored
+ *    under `term`.
+ *  - Averages-only data (Skyward's /classes): the class carries an `averages`
+ *    dict keyed by every term/subterm label and no scores → a numeric-average
+ *    snapshot is recorded under EACH of those labels at once, so history,
+ *    timeline and "Load from Storage" have every term without extra fetches.
+ *
+ * Shared by `addGradesStore` (resets initialTerm/termList) and
+ * `addGradesStoreLoad` (preserves them).
  */
 function mergeClassesIntoHistory(
   history: GradesHistory,
@@ -79,32 +121,40 @@ function mergeClassesIntoHistory(
   classes: any[]
 ): GradesHistory {
   const newHistory = { ...history };
-  newHistory[term] = newHistory[term] ? { ...newHistory[term] } : {};
+  const ensureTerm = (t: string) => {
+    newHistory[t] = newHistory[t] ? { ...newHistory[t] } : {};
+    return newHistory[t];
+  };
 
   for (const classData of classes) {
     const courseKey = `${classData.course}|${classData.name}`;
-    const existing = newHistory[term][courseKey];
-    const courseHistory = existing ? [...existing] : [];
-    newHistory[term][courseKey] = courseHistory;
+    const hasDetail =
+      (Array.isArray(classData.scores) && classData.scores.length > 0) ||
+      (classData.categories && Object.keys(classData.categories).length > 0);
+    const averagesDict =
+      classData.averages && typeof classData.averages === 'object' ? classData.averages : null;
 
-    const snapshot = {
-      loadedAt: Date.now(),
-      average: classData.average,
-      categories: classData.categories,
-      scores: classData.scores,
-    };
-
-    const latest = courseHistory[courseHistory.length - 1];
-    const unchanged =
-      latest &&
-      JSON.stringify(latest.average) === JSON.stringify(classData.average) &&
-      JSON.stringify(latest.categories) === JSON.stringify(classData.categories) &&
-      JSON.stringify(latest.scores) === JSON.stringify(classData.scores);
-
-    if (unchanged) {
-      courseHistory[courseHistory.length - 1] = snapshot;
+    if (!hasDetail && averagesDict) {
+      // Averages-only: record a snapshot for every label that holds a number
+      // (skips non-numeric marks like citizenship 'S' and blank columns).
+      for (const label of Object.keys(averagesDict)) {
+        const avg = averagesDict[label];
+        if (avg === undefined || avg === null || avg === '' || isNaN(parseFloat(avg))) continue;
+        pushSnapshot(ensureTerm(label), courseKey, {
+          loadedAt: Date.now(),
+          average: avg,
+          categories: undefined,
+          scores: undefined as any,
+        });
+      }
     } else {
-      courseHistory.push(snapshot);
+      const average = classData.average ?? (averagesDict ? averagesDict[term] : undefined);
+      pushSnapshot(ensureTerm(term), courseKey, {
+        loadedAt: Date.now(),
+        average,
+        categories: classData.categories,
+        scores: classData.scores,
+      });
     }
   }
 
@@ -118,6 +168,11 @@ const DEFAULT_USER: User = {
   platform: 'hac',
   link: '',
   clsession: '',
+  code: '',
+  clMFA: '',
+  mfaType: '',
+  studentId: '',
+  students: [],
   name: '',
   avatar: '',
   district: '',

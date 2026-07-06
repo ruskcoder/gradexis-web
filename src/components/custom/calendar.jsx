@@ -150,8 +150,12 @@ export default function Calendar({ initialMonth = new Date().getMonth(), initial
                         <div
                           className="rounded-sm text-xs px-1 truncate cursor-help"
                           style={{
-                            backgroundColor: `rgba(${hexToRgb(evt.color)}, 0.2)`,
-                            color: `color-mix(in srgb, ${evt.color} 60%, black 40%)`,
+                            // Fall back to the theme color when the portal gives
+                            // no event color (e.g. Skyward) instead of rendering blank.
+                            backgroundColor: evt.color
+                              ? `rgba(${hexToRgb(evt.color)}, 0.2)`
+                              : `color-mix(in srgb, var(--primary) 20%, transparent)`,
+                            color: `color-mix(in srgb, ${evt.color || 'var(--primary)'} 60%, black 40%)`,
                           }}
                         >
                           {evt.event}

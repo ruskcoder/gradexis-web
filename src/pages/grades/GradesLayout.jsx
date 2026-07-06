@@ -15,35 +15,46 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { useCurrentUser } from '@/lib/store'
-import { getClasses } from '@/lib/grades-api'
-import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData } from '@/lib/grades-store'
+import { getClasses, getSingleClass } from '@/lib/grades-api'
+import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData, addGradesLoad } from '@/lib/grades-store'
+import { transformGroupsToCategories } from '@/lib/utils'
 import { PremiumDialog } from '@/components/custom/premium-dialog'
-import { ChevronLeft, GitCommitHorizontal } from 'lucide-react'
+import { ChevronLeft, GitCommitHorizontal, Loader2 } from 'lucide-react'
 
-// Matches the CSS `ease` used across the app so the term cross-fade curve is
-// identical to the rest of the UI. Mirrors the mobile app's TermPageShift: the
-// outgoing page drifts out toward the travel direction while the incoming page
-// slides in from the opposite edge, the two overlapping in a cross-fade.
+// Matches the CSS `ease` used across the app so the term transition curve is
+// identical to the rest of the UI. A pure opacity cross-fade (no horizontal
+// slide) — the slide caused transformed content to spill past the scroll
+// container and flash scrollbars on every term switch.
 const TERM_EASE = [0.25, 0.1, 0.25, 1]
 const termPageVariants = {
-  enter: (dir) => ({ opacity: 0, x: dir * 28 }),
-  center: { opacity: 1, x: 0 },
-  exit: (dir) => ({ opacity: 0, x: dir * -28 }),
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
 }
 // Staggered fade-up reveal for the grade list/cards, mirroring the mobile
-// cascade — each item rises 12px into place a beat after the previous.
+// cascade — each item rises a few px into place a beat after the previous. The
+// small y drift is clipped by the `overflow-hidden` stage wrapper below so it
+// can't extend the scroll area.
 const gradesListContainer = {
   hidden: {},
   show: { transition: { staggerChildren: 0.035 } },
 }
 const gradeItemVariants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 10 },
   show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: TERM_EASE } },
 }
 
 export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }) {
   const [terms, setTerms] = useState([]);
   const [currentTerm, setCurrentTerm] = useState('');
+  // Skyward-style portals return every term's averages in one payload plus a
+  // `subterms` map (e.g. { "1ST": ["PR1","PR2"] }). When present we render a
+  // second tab bar (the subtabs) under the term tabs and read grades from each
+  // class's `averages` dict by the selected label — no re-fetch per term.
+  const [subtermsMap, setSubtermsMap] = useState({});
+  const [hasSubterms, setHasSubterms] = useState(false);
+  const [currentSubterm, setCurrentSubterm] = useState(null);
+  const [allInOneClasses, setAllInOneClasses] = useState(null);
   const [progressByTerm, setProgressByTerm] = useState({});
   const [classesDataByTerm, setClassesDataByTerm] = useState({});
   const [selectedGrade, setSelectedGrade] = useState(null);
@@ -57,7 +68,6 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
   const navigate = useNavigate();
   const abortControllerRef = useRef({});
   const userHasSelectedTermRef = useRef(false);
-  const directionRef = useRef(0);
   const animationsEnabled = user ? user.animationsEnabled !== false : true;
   const isWhatIfMode = location.pathname === '/grades/whatif';
   const isTimeTravelMode = location.pathname === '/statistics/timetravel';
@@ -81,6 +91,13 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
         } else if (chunk.success === true) {
           if (initial) {
             setTerms(chunk.termList);
+
+            // Detect the all-in-one (Skyward-style) shape: a `subterms` map or
+            // per-class `averages` dicts mean every term is already in-hand.
+            const allInOne = !!chunk.hasSubterms || (chunk.classes?.[0]?.averages != null);
+            setHasSubterms(!!chunk.hasSubterms);
+            setSubtermsMap(chunk.subterms || {});
+            if (allInOne) setAllInOneClasses(chunk.classes);
 
             if (!userHasSelectedTermRef.current) {
               setCurrentTerm(chunk.term);
@@ -130,14 +147,66 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
 
   const handleTabChange = (term) => {
     userHasSelectedTermRef.current = true;
-    const from = terms.indexOf(currentTerm);
-    const to = terms.indexOf(term);
-    directionRef.current = from === -1 || to === -1 ? 0 : Math.sign(to - from);
     setCurrentTerm(term);
+    setCurrentSubterm(null);
     setSelectedGrade(null);
+    // All-in-one portals already hold every term's grades — just switch labels.
+    if (allInOneClasses) return;
     if (classesDataByTerm[term] || loadingTerms[term]) return;
     fetchClasses(term);
   };
+
+  const handleSubtermChange = (subterm) => {
+    // The first pill re-selects the parent term itself (its own overall grade).
+    setCurrentSubterm(subterm === currentTerm ? null : subterm);
+    setSelectedGrade(null);
+  };
+
+  // The label whose grade/detail we actually show: the chosen subterm, else the
+  // selected term. Resolve a class's grade from its averages dict (Skyward) or
+  // its single `average` (HAC and other per-term portals).
+  const effectiveTerm = currentSubterm || currentTerm;
+  const resolveGrade = (course) =>
+    course && course.averages ? (course.averages[effectiveTerm] ?? '') : course?.average;
+  const subtabsForTerm = hasSubterms ? (subtermsMap[currentTerm] || []) : [];
+  const displayClasses = allInOneClasses || classesDataByTerm[currentTerm];
+
+  // Averages-only portals (Skyward) hand back grades without assignment scores;
+  // fetch the per-class detail on demand so every right-panel element (grades,
+  // what-if, impacts, ...) receives a class enriched with scores + categories,
+  // and persist that detail into history for the storage/timeline features.
+  const [detailByKey, setDetailByKey] = useState({});
+  const [detailLoadingKey, setDetailLoadingKey] = useState(null);
+  const detailKey = selectedGrade ? `${selectedGrade.course}|${effectiveTerm}` : null;
+  const needsDetail = !!selectedGrade && !isTimeTravelMode &&
+    !(selectedGrade.scores && selectedGrade.scores.length) && !!selectedGrade.averages;
+
+  useEffect(() => {
+    if (!needsDetail || !detailKey || detailByKey[detailKey]) return;
+    let cancelled = false;
+    setDetailLoadingKey(detailKey);
+    getSingleClass(selectedGrade.course, effectiveTerm)
+      .then((data) => {
+        if (cancelled) return;
+        const raw = data && data.class;
+        if (!raw) return;
+        // Flatten multi-group semesters (Skyward SM1/SM2) into categories/scores.
+        const cls = transformGroupsToCategories(raw);
+        setDetailByKey((prev) => ({ ...prev, [detailKey]: cls }));
+        addGradesLoad(effectiveTerm, [{ ...selectedGrade, ...cls }]);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setDetailLoadingKey((k) => (k === detailKey ? null : k));
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailKey, needsDetail]);
+
+  const enrichedGrade = selectedGrade
+    ? (needsDetail && detailByKey[detailKey] ? { ...selectedGrade, ...detailByKey[detailKey] } : selectedGrade)
+    : null;
+  const detailLoading = needsDetail && !detailByKey[detailKey];
 
   const handleLoadFromStorage = () => {
     const isInitialLoad = loadingTerms.initial;
@@ -220,16 +289,38 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                   </TabsTrigger>
                 ))}
               </TabsList>}
-              <div className="flex-1 overflow-y-auto relative">
-                <AnimatePresence mode="popLayout" custom={directionRef.current} initial={false}>
+              {subtabsForTerm.length > 0 && (
+                <div className="flex w-full gap-1 mt-2 rounded-lg bg-muted p-1">
+                  {[currentTerm, ...subtabsForTerm].map((sub) => {
+                    const active = effectiveTerm === sub;
+                    return (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => handleSubtermChange(sub)}
+                        className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                          active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {/* overflow-x-hidden kills the horizontal scrollbar; the inner
+                  overflow-hidden wrapper clips the reveal's small vertical drift
+                  so it can't extend the vertical scroll area either. */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+                <div className="overflow-hidden">
+                <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={currentTerm || 'initial'}
-                    custom={directionRef.current}
                     variants={animationsEnabled ? termPageVariants : undefined}
                     initial={animationsEnabled ? 'enter' : false}
                     animate={animationsEnabled ? 'center' : undefined}
                     exit={animationsEnabled ? 'exit' : undefined}
-                    transition={{ duration: 0.24, ease: TERM_EASE }}
+                    transition={{ duration: 0.18, ease: TERM_EASE }}
                   >
                     {(loadingTerms[currentTerm] || loadingTerms.initial) && <div className='flex flex-col items-center justify-center'>
                       <div className='w-full text-center my-2'>{progressByTerm[currentTerm]?.message || progressByTerm.initial?.message}</div>
@@ -244,14 +335,14 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                         Load from Storage
                       </Button>
                     </div>}
-                    {!loadingTerms[currentTerm] && !loadingTerms.initial && classesDataByTerm[currentTerm] && (
+                    {!loadingTerms[currentTerm] && !loadingTerms.initial && displayClasses && (
                       <div className="mt-2">
                         {storageMode[currentTerm] && (
                           <div className="mb-4 p-3 bg-muted rounded-lg text-sm text-muted-foreground">
                             Last Loaded: {formatDate(lastLoadedDate[currentTerm])}
                           </div>
                         )}
-                        {classesDataByTerm[currentTerm].length === 0 ? (
+                        {displayClasses.length === 0 ? (
                           <div className="flex items-center justify-center h-16">
                             <p className="text-muted-foreground">No classes to display</p>
                           </div>
@@ -262,19 +353,22 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                             animate={animationsEnabled ? 'show' : undefined}
                           >
                             <GradesList variant={user.gradesView}>
-                              {classesDataByTerm[currentTerm].map((course, index) => (
-                                <motion.div
-                                  key={index}
-                                  variants={animationsEnabled ? gradeItemVariants : undefined}
-                                  onClick={() => course.average && setSelectedGrade(course)}
-                                >
-                                  <GradesItem
-                                    courseName={course.name}
-                                    id={course.course}
-                                    grade={course.average}
-                                  />
-                                </motion.div>
-                              ))}
+                              {displayClasses.map((course, index) => {
+                                const grade = resolveGrade(course);
+                                return (
+                                  <motion.div
+                                    key={index}
+                                    variants={animationsEnabled ? gradeItemVariants : undefined}
+                                    onClick={() => grade && setSelectedGrade(course)}
+                                  >
+                                    <GradesItem
+                                      courseName={course.name}
+                                      id={course.course}
+                                      grade={grade}
+                                    />
+                                  </motion.div>
+                                );
+                              })}
                             </GradesList>
                           </motion.div>
                         )}
@@ -282,6 +376,7 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                     )}
                   </motion.div>
                 </AnimatePresence>
+                </div>
               </div>
             </Tabs>
           </ResizablePanel>
@@ -329,8 +424,13 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                 <p className="text-muted-foreground text-center h-full flex items-center justify-center max-h-[46px]">
                   Select a grade to continue.
                 </p>
+              ) : detailLoading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+                  <Loader2 className="animate-spin" size={28} />
+                  <span className="text-sm">Loading assignments…</span>
+                </div>
               ) : (
-                React.cloneElement(element, { selectedGrade, term: currentTerm })
+                React.cloneElement(element, { selectedGrade: enrichedGrade, term: effectiveTerm })
               )}
             </div>
           </ResizablePanel>

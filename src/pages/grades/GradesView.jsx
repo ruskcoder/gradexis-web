@@ -37,7 +37,12 @@ export function GradesView({ selectedGrade, timeTravel = false, term }) {
 
   const displayedGrade = useMemo(() => {
     if (!timeTravel || !selectedGrade || history.length === 0) {
-      return selectedGrade
+      if (!selectedGrade) return selectedGrade
+      // selectedGrade is already enriched with scores/categories by GradesLayout;
+      // just resolve the shown average from the averages dict (Skyward) when
+      // there's no single `average` field.
+      const average = selectedGrade.average ?? selectedGrade.averages?.[term]
+      return { ...selectedGrade, average }
     }
 
     const historyItem = history[historyIndex]
@@ -49,7 +54,7 @@ export function GradesView({ selectedGrade, timeTravel = false, term }) {
       categories: historyItem.categories,
       scores: historyItem.scores,
     }
-  }, [timeTravel, selectedGrade, history, historyIndex])
+  }, [timeTravel, selectedGrade, history, historyIndex, term])
 
   const displayedTimestamp = useMemo(() => {
     if (!timeTravel || history.length === 0) {
@@ -69,6 +74,24 @@ export function GradesView({ selectedGrade, timeTravel = false, term }) {
       hour12: true,
     })
   }, [timeTravel, history, historyIndex])
+
+  // A semester (Skyward SM1/SM2) is a set of terms, each graded on its own
+  // categories/assignments and then weighted-averaged into the semester grade.
+  // Render that hierarchy — one card per term — instead of a flat "2ND - Major
+  // Grade" soup. `groups` survives on the enriched grade (the flattener spreads it).
+  const groups = displayedGrade?.groups && typeof displayedGrade.groups === 'object'
+    ? displayedGrade.groups
+    : null
+  // Order the terms chronologically (1ST, 2ND, ... then exams), not by the map's
+  // insertion order which comes back reversed.
+  const termRank = (t) => {
+    const m = /^(\d+)/.exec(t)
+    if (m) return parseInt(m[1])
+    if (/^EX/i.test(t)) return 90 + (parseInt((/\d+/.exec(t) || [])[0]) || 0)
+    return 50
+  }
+  const groupNames = groups ? Object.keys(groups).sort((a, b) => termRank(a) - termRank(b)) : []
+  const showGrouped = groupNames.length > 1 && !timeTravel
 
   if (!selectedGrade) {
     return (
@@ -107,21 +130,74 @@ export function GradesView({ selectedGrade, timeTravel = false, term }) {
         </Card>
       )}
       <div className="flex gap-4 overflow-x-auto mb-4">
-        <RingGradeStat grade={parseFloat(displayedGrade.average).toPrecision(4)} />
-        <CategoryGradeList>
-          {Object.entries(displayedGrade.categories || {}).map(([categoryName, categoryData]) => (
-            <CategoryGradeStat
-              key={categoryName}
-              categoryData={{ category: categoryName, ...categoryData }}
-            />
-          ))}
-        </CategoryGradeList>
+        <RingGradeStat grade={Number.isFinite(parseFloat(displayedGrade.average)) ? parseFloat(displayedGrade.average).toPrecision(4) : displayedGrade.average} />
+        {!showGrouped && (
+          <CategoryGradeList>
+            {Object.entries(displayedGrade.categories || {}).map(([categoryName, categoryData]) => (
+              <CategoryGradeStat
+                key={categoryName}
+                categoryData={{ category: categoryName, ...categoryData }}
+              />
+            ))}
+          </CategoryGradeList>
+        )}
       </div>
-      <ClassGradesList>
-        {(displayedGrade.scores || []).map((score, index) => (
-          <ClassGradesItem key={index} scoreData={score} />
-        ))}
-      </ClassGradesList>
+
+      {showGrouped ? (
+        <div className="flex flex-col gap-4">
+          {groupNames.map((groupName) => {
+            const group = groups[groupName] || {}
+            const weight = parseFloat(group.weight)
+            const grade = group.grade
+            return (
+              <Card key={groupName} className="gap-3">
+                <CardHeader className="pb-0">
+                  <CardTitle className="flex items-center justify-between text-base font-semibold">
+                    <span className="flex items-baseline gap-2">
+                      {groupName}
+                      {Number.isFinite(weight) && weight > 0 && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {weight}% of semester
+                        </span>
+                      )}
+                    </span>
+                    {grade !== undefined && grade !== '' && (
+                      <span className="tabular-nums">{grade}</span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  <div className="flex gap-4 overflow-x-auto">
+                    <CategoryGradeList>
+                      {Object.entries(group.categories || {}).map(([categoryName, categoryData]) => (
+                        <CategoryGradeStat
+                          key={categoryName}
+                          categoryData={{ category: categoryName, ...categoryData }}
+                        />
+                      ))}
+                    </CategoryGradeList>
+                  </div>
+                  {(group.scores || []).length > 0 ? (
+                    <ClassGradesList>
+                      {group.scores.map((score, index) => (
+                        <ClassGradesItem key={index} scoreData={score} />
+                      ))}
+                    </ClassGradesList>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No assignments recorded for this term.</p>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      ) : (
+        <ClassGradesList>
+          {(displayedGrade.scores || []).map((score, index) => (
+            <ClassGradesItem key={index} scoreData={score} />
+          ))}
+        </ClassGradesList>
+      )}
     </>
   )
 }

@@ -81,7 +81,7 @@ export default function Attendance() {
                   return (
                     <ListItem
                       key={`${dateStr}-${idx}`}
-                      squareColor={event.color}
+                      squareColor={event.color || 'var(--primary)'}
                       squareText={day}
                       Title={event.event}
                       Desc={desc}

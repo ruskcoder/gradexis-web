@@ -24,11 +24,15 @@ export default function Teachers() {
         setLoading(true)
         const data = await getTeachers()
         if (data.success && data.teachers && Array.isArray(data.teachers)) {
+          // Email is optional — some portals (Skyward) don't expose it. Keep any
+          // entry with a teacher name; dedupe by email when present, else by the
+          // teacher/class pair so those portals still list every teacher.
           const seen = new Set()
           const uniqueTeachers = data.teachers.filter((t) => {
-            if (!t.teacher || !t.email) return false
-            if (seen.has(t.email)) return false
-            seen.add(t.email)
+            if (!t.teacher) return false
+            const dedupeKey = t.email || `${t.teacher}|${t.class || ''}`
+            if (seen.has(dedupeKey)) return false
+            seen.add(dedupeKey)
             return true
           })
           setTeachers(uniqueTeachers)
@@ -94,9 +98,10 @@ export default function Teachers() {
                   squareColor="var(--primary)"
                   squareText={getInitials(teacher.teacher)}
                   Title={teacher.teacher}
-                  Desc={teacher.email}
+                  Desc={teacher.email || teacher.class || ''}
                   minWidth="350px"
                   rightContent={
+                    teacher.email ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -119,6 +124,7 @@ export default function Teachers() {
                         {copiedEmail === idx ? 'Copied!' : 'Copy'}
                       </TooltipContent>
                     </Tooltip>
+                    ) : null
                   }
                 />
               </TooltipProvider>

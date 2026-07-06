@@ -354,6 +354,24 @@ export const WhatIf = ({ selectedGrade }) => {
     setTargetRequired(null)
   }
 
+  // A semester rolls up several independently-graded terms (each weighted into
+  // the final grade), so a single flat what-if would compute the wrong number.
+  // What-if works per term — steer the user to a term / progress-period tab.
+  const groupCount = selectedGrade?.groups && typeof selectedGrade.groups === 'object'
+    ? Object.keys(selectedGrade.groups).length
+    : 0
+  if (groupCount > 1) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
+        <p className="font-medium">What-If isn’t available for a full semester</p>
+        <p className="max-w-xs text-sm text-muted-foreground">
+          A semester grade is an average of its terms, each graded separately.
+          Pick a term or progress period (e.g. {Object.keys(selectedGrade.groups)[0]}) to run What-If on it.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className='space-y-4'>
       <div className="flex gap-4 overflow-x-auto">
