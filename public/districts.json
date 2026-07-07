@@ -3,13 +3,13 @@
     "name": "Katy ISD",
     "platform": "hac",
     "link": "https://homeaccess.katyisd.org/",
-    "loginType": "credentials"
+    "loginType": "credentials/classlink"
   },
   {
     "name": "Houston ISD",
     "platform": "powerschool",
     "link": "https://hisdconnect.powerschool.com/",
-    "loginType": "credentials"
+    "loginType": "credentials/microsoft"
   },
   {
     "name": "Spring Branch ISD",
