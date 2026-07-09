@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Building2, GraduationCap, KeyRound, Link2, School } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field';
@@ -14,24 +15,46 @@ import {
   ItemGroup,
 } from '@/components/ui/item';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import '@/assets/css/login.css';
 import Wallpaper from '@/assets/wallpaper.jpg';
+import HacLogo from '@/assets/img/hac.png';
+import SkywardLogo from '@/assets/img/skyward.png';
+import PowerschoolLogo from '@/assets/img/powerschool.png';
+import ClassLinkLogo from '@/assets/img/classlink.png';
+import MicrosoftMark from '@/assets/img/microsoft.png';
 import {
   CLASSLINK_LAUNCHPAD_BASE,
   classlinkCodeFromLink,
   DISTRICTS_URL,
+  parseLoginMethods,
   PLATFORMS,
   PLATFORM_MAPPING,
 } from '@/lib/constants';
-import { fetchDistrictDetails, login } from '@/lib/grades-api';
+import { fetchAuthMethods, fetchDistrictDetails, login } from '@/lib/grades-api';
 import { useStore } from '@/lib/store';
 import { showWebNotificationsForUser, fetchReferralData } from '@/App';
 import MfaPrompt from '@/components/custom/mfa-prompt';
 
-const PLATFORM_ICONS = {
-  hac: School,
-  'skyward-legacy': GraduationCap,
-  powerschool: Building2,
+const PLATFORM_LOGOS = {
+  hac: HacLogo,
+  'skyward-legacy': SkywardLogo,
+  powerschool: PowerschoolLogo,
+};
+
+function MicrosoftLogo() {
+  return <img src={MicrosoftMark} alt="" className="block h-4 w-4" />;
+}
+
+// Horizontal slide between wizard steps. The incoming step enters from the side
+// the navigation is heading (dir = 1 forward → in from the right); the outgoing
+// step leaves the opposite way. mode="wait" runs them in sequence so it reads as
+// one continuous horizontal translate rather than a snap.
+const STEP_SLIDE = 320;
+const stepVariants = {
+  enter: (dir) => ({ x: dir * 48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir) => ({ x: dir * -48, opacity: 0 }),
 };
 
 export default function Login() {
@@ -71,6 +94,24 @@ export default function Login() {
     isReauth ? 'Your password or 2FA has changed. Please log in again.' : null
   );
 
+  // Which sign-in methods the selected district offers (parsed from its slash
+  // `loginType`, or discovered via /authMethods for a Custom link). Microsoft is
+  // disabled on the web (mobile-only) but still surfaced as a hint button so the
+  // user knows the option exists. Seeded from the loginType so a ClassLink
+  // re-auth (which lands straight on the form) shows its credential form.
+  const [authMethods, setAuthMethods] = useState(() => {
+    const lt = searchParams.get('loginType');
+    return {
+      credentials: lt !== 'classlinkCredentials',
+      classlink: lt === 'classlinkCredentials',
+      microsoft: false,
+    };
+  });
+  // Optional per-method section titles a district declares (PowerSchool
+  // parent-vs-student, e.g. credentials = "Parent Login", microsoft = "Student
+  // Login").
+  const [loginTitles, setLoginTitles] = useState({});
+
   // Custom HAC "fetch details" state.
   const [detailsFetched, setDetailsFetched] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -109,13 +150,46 @@ export default function Login() {
   }, []);
 
   // --- Animated viewport height (adapts to the active step) ------------------
+  // The wrapper's height is driven imperatively so CSS can transition it as the
+  // active step's content changes size. A plain layout effect isn't enough:
+  // `AnimatePresence mode="wait"` mounts the next step from its own internal
+  // state after the exit finishes, which re-renders only the AnimatePresence
+  // subtree — not this component — so a Login-level effect never re-runs at the
+  // moment the new content appears, leaving the height stale (it snaps on some
+  // later render instead of animating). A *callback ref* fires on the actual
+  // DOM mount/unmount of the step node regardless of who rendered it, and a
+  // ResizeObserver additionally catches size changes within a step (revealing
+  // fields, error text, etc.).
   const viewportRef = useRef(null);
-  const contentRef = useRef(null);
-  useLayoutEffect(() => {
-    if (viewportRef.current && contentRef.current) {
-      viewportRef.current.style.height = contentRef.current.offsetHeight + 'px';
-    }
-  });
+  const resizeObsRef = useRef(null);
+  const measuredOnceRef = useRef(false);
+  const setContentNode = useCallback((node) => {
+    resizeObsRef.current?.disconnect();
+    if (!node) return;
+    const measure = () => {
+      // Child refs are assigned before parent refs, so on the initial mount
+      // `viewportRef` may not be set yet — fall back to the node's parent (the
+      // `.login-step-viewport` wrapper it lives directly inside).
+      const viewport = viewportRef.current ?? node.parentElement;
+      if (!viewport) return;
+      const h = node.offsetHeight;
+      if (!measuredOnceRef.current) {
+        // First measurement: set the height without animating from auto/0.
+        const prev = viewport.style.transition;
+        viewport.style.transition = 'none';
+        viewport.style.height = h + 'px';
+        void viewport.offsetHeight; // flush so the next change transitions
+        viewport.style.transition = prev;
+        measuredOnceRef.current = true;
+      } else {
+        viewport.style.height = h + 'px';
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    resizeObsRef.current = ro;
+  }, []);
 
   const filteredDistricts = districts.filter((d) => {
     const q = search.trim().toLowerCase();
@@ -129,11 +203,22 @@ export default function Login() {
 
   const selectDistrict = (d) => {
     setPlatform(d.platform || 'hac');
-    const lt = d.loginType || 'credentials';
+    // The list already declares its methods in the slash `loginType`, so derive
+    // them directly — no /authMethods probe. Base the credential flow on
+    // credentials when offered, else ClassLink.
+    const methods = parseLoginMethods(d.loginType);
+    // Default the active form to credentials when offered, else ClassLink. (A
+    // Microsoft-only district has neither → the form shows just the Microsoft
+    // hint button.)
+    const lt = methods.credentials ? 'credentials' : methods.classlink ? 'classlinkCredentials' : 'credentials';
     setLoginType(lt);
+    setAuthMethods({ credentials: methods.credentials, classlink: methods.classlink, microsoft: methods.microsoft });
+    setLoginTitles(d.loginTitles || {});
     setDistrictName(d.name);
     setLink(d.link);
-    setCode(lt === 'classlinkCredentials' ? classlinkCodeFromLink(d.link) : '');
+    // Prefill the ClassLink code from the loginType's inline "classlink:<code>"
+    // when declared, else derive it from the launchpad link.
+    setCode(methods.classlink ? (methods.classlinkCode || classlinkCodeFromLink(d.link)) : '');
     setFromCustom(false);
     setDetailsFetched(true);
     setDistrictOptions([]);
@@ -151,6 +236,15 @@ export default function Login() {
 
   const pickSource = (source) => {
     setLoginType(source === 'classlink' ? 'classlinkCredentials' : 'credentials');
+    // A Custom flow is single-source (the user explicitly picked one): offer only
+    // that method until the "fetch details" probe discovers Microsoft alongside
+    // credentials (PowerSchool parent-vs-student).
+    setAuthMethods({
+      credentials: source === 'credentials',
+      classlink: source === 'classlink',
+      microsoft: false,
+    });
+    setLoginTitles({});
     setFromCustom(true);
     setDistrictName('');
     setLink('');
@@ -167,11 +261,34 @@ export default function Login() {
     if (!link.trim()) return;
     setFetching(true);
     setError(null);
-    const res = await fetchDistrictDetails(platform, link.trim());
+    // A Custom link is undeclared, so this is where we probe: discover both the
+    // multi-district picker (HAC) and the offered sign-in methods (credentials /
+    // Microsoft, e.g. a PowerSchool parent-vs-student portal) in parallel.
+    const [res, methods] = await Promise.all([
+      fetchDistrictDetails(platform, link.trim()),
+      fetchAuthMethods(platform, link.trim()),
+    ]);
     setDistrictOptions(res.districts);
     if (res.multiple && res.districts[0]) setDistrictName(res.districts[0].name);
+    setAuthMethods({ credentials: methods.credentials, classlink: false, microsoft: methods.microsoft });
+    // If the portal is Microsoft-only, drop the credentials form and default the
+    // active mode away from it.
+    if (!methods.credentials && methods.microsoft) setLoginType('credentials');
     setDetailsFetched(true);
     setFetching(false);
+  };
+
+  // Switch the active credential form between the offered methods (the fix for
+  // the button "disappearing" with no way back). Microsoft isn't a form mode on
+  // the web — it's a disabled hint — so only credentials ↔ ClassLink switch here.
+  const switchMethod = (method) => {
+    setError(null);
+    if (method === 'classlink') {
+      setLoginType('classlinkCredentials');
+      setCode((c) => c || classlinkCodeFromLink(link) || '');
+    } else {
+      setLoginType('credentials');
+    }
   };
 
   /**
@@ -306,6 +423,13 @@ export default function Login() {
   const isClassLink = loginType === 'classlinkCredentials';
   const needsFetch = fromCustom && loginType === 'credentials';
   const showCredentials = !needsFetch || detailsFetched;
+  // The active credential mode actually has a form to fill (a Microsoft-only
+  // district offers neither credentials nor ClassLink, so it shows just the
+  // Microsoft hint).
+  const hasCredForm = isClassLink ? authMethods.classlink : authMethods.credentials;
+  const showCredForm = showCredentials && hasCredForm;
+  // Title above the active credential form (e.g. PowerSchool "Parent Login").
+  const activeTitle = isClassLink ? loginTitles.classlink : loginTitles.credentials;
   const canSubmit =
     !loading && !!username && !!password && (isClassLink ? !!(code || link) : true);
 
@@ -372,22 +496,19 @@ export default function Login() {
           <div className="w-full">
             <p className="text-center text-sm font-medium mb-3">Choose your platform</p>
             <div className="grid grid-cols-2 gap-3">
-              {PLATFORMS.map((p) => {
-                const Icon = PLATFORM_ICONS[p] || School;
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => pickPlatform(p)}
-                    className="aspect-square flex flex-col items-center justify-center gap-2 rounded-xl border bg-white/60 p-3 transition hover:bg-white/90"
-                  >
-                    <Icon className="h-7 w-7" />
-                    <span className="text-sm font-medium text-center">
-                      {PLATFORM_MAPPING[p] ?? p}
-                    </span>
-                  </button>
-                );
-              })}
+              {PLATFORMS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => pickPlatform(p)}
+                  className="aspect-square flex flex-col items-center justify-center gap-2 rounded-xl border bg-white/60 p-3 transition hover:bg-white/90"
+                >
+                  <img src={PLATFORM_LOGOS[p]} alt="" className="h-10 w-10 object-contain" />
+                  <span className="text-sm font-medium text-center">
+                    {PLATFORM_MAPPING[p] ?? p}
+                  </span>
+                </button>
+              ))}
             </div>
             <div className="mt-4 w-full">
               <Button type="button" variant="outline" onClick={back} className="w-full">
@@ -415,7 +536,7 @@ export default function Login() {
                 onClick={() => pickSource('classlink')}
                 className="aspect-square flex flex-col items-center justify-center gap-2 rounded-xl border bg-white/60 p-3 transition hover:bg-white/90"
               >
-                <Link2 className="h-7 w-7" />
+                <img src={ClassLinkLogo} alt="" className="h-10 w-10 object-contain" />
                 <span className="text-sm font-medium">ClassLink</span>
               </button>
             </div>
@@ -437,7 +558,9 @@ export default function Login() {
                     <ItemTitle className="w-auto">{districtName}</ItemTitle>
                     <ItemSubtitle>{PLATFORM_MAPPING[platform]}</ItemSubtitle>
                   </ItemHeader>
-                  <ItemDescription>{link}</ItemDescription>
+                  <ItemDescription>
+                    {isClassLink ? `${CLASSLINK_LAUNCHPAD_BASE}${code}` : link}
+                  </ItemDescription>
                 </ItemContent>
               </Item>
             ) : (
@@ -463,11 +586,14 @@ export default function Login() {
                   <FieldGroup className="gap-4">
                     {error && <p className="w-full text-center text-red-500">{error}</p>}
 
-                    {/* ClassLink: launchpad link with a fixed prefix. */}
-                    {fromCustom && isClassLink && (
+                    {/* ClassLink: launchpad link with a fixed prefix, user types
+                        only the code. Only shown for a Custom ClassLink login —
+                        a district picked from the list already has its code
+                        resolved and shows it in the item above instead. */}
+                    {isClassLink && fromCustom && (
                       <Field>
                         <FieldLabel>District Link</FieldLabel>
-                        <div className="flex items-center rounded-md border border-input bg-transparent px-3 h-9 text-sm focus-within:ring-1 focus-within:ring-ring">
+                        <div className="flex items-center rounded-md border border-input px-3 h-9 text-sm bg-transparent focus-within:ring-1 focus-within:ring-ring">
                           <span className="text-muted-foreground select-none">
                             {CLASSLINK_LAUNCHPAD_BASE}
                           </span>
@@ -528,8 +654,11 @@ export default function Login() {
                       </Field>
                     )}
 
-                    {showCredentials && (
+                    {showCredForm && (
                       <>
+                        {activeTitle && (
+                          <p className="text-sm font-semibold -mb-1">{activeTitle}</p>
+                        )}
                         <Field>
                           <FieldLabel>Username</FieldLabel>
                           <Input
@@ -560,13 +689,84 @@ export default function Login() {
                 <Button type="button" variant="outline" onClick={back} disabled={loading}>
                   Back
                 </Button>
-                {showCredentials && (
+                {showCredForm && (
                   <Button className="flex-1" type="submit" disabled={!canSubmit}>
                     {loading && <Spinner />}
                     Login
                   </Button>
                 )}
               </div>
+
+              {/* Alternative sign-in methods this district also offers. Each is a
+                  switch button (fixing the old behaviour where the button just
+                  vanished with no way back to credentials). Microsoft is disabled
+                  on the web — a popover explains it's mobile-only. */}
+              {showCredentials && (
+                (() => {
+                  const alts = [];
+                  // Switch to ClassLink (from the credentials form).
+                  if (authMethods.classlink && !isClassLink) {
+                    alts.push(
+                      <Button
+                        key="classlink"
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        disabled={loading}
+                        onClick={() => switchMethod('classlink')}
+                      >
+                        <img src={ClassLinkLogo} alt="" className="h-4 w-4 object-contain" />
+                        {loginTitles.classlink || 'Sign in with ClassLink'}
+                      </Button>
+                    );
+                  }
+                  // Switch back to credentials (from the ClassLink form).
+                  if (authMethods.credentials && isClassLink) {
+                    alts.push(
+                      <Button
+                        key="credentials"
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        disabled={loading}
+                        onClick={() => switchMethod('credentials')}
+                      >
+                        <KeyRound className="h-4 w-4" />
+                        {loginTitles.credentials || 'Sign in with Credentials'}
+                      </Button>
+                    );
+                  }
+                  // Microsoft — disabled on web, with an explanatory popover.
+                  if (authMethods.microsoft) {
+                    alts.push(
+                      <Popover key="microsoft">
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-md border h-9 px-4 text-sm font-medium opacity-60 cursor-not-allowed"
+                          >
+                            <MicrosoftLogo />
+                            {loginTitles.microsoft || 'Sign in with Microsoft'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 text-center text-sm">
+                          Microsoft sign-in is disabled on the website. Please use the
+                          Gradexis mobile app to sign in with Microsoft.
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  }
+                  if (!alts.length) return null;
+                  return (
+                    <>
+                      {showCredForm && (
+                        <p className="text-center text-xs text-muted-foreground my-2">or</p>
+                      )}
+                      <div className="flex flex-col gap-2 mt-2">{alts}</div>
+                    </>
+                  );
+                })()
+              )}
             </form>
           </div>
         );
@@ -648,13 +848,20 @@ export default function Login() {
 
             <div className="login-form width-full mt-6">
               <div ref={viewportRef} className="login-step-viewport">
-                <div
-                  key={step}
-                  ref={contentRef}
-                  className={dir === 1 ? 'login-step-forward' : 'login-step-back'}
-                >
-                  {renderStep()}
-                </div>
+                <AnimatePresence mode="wait" custom={dir} initial={false}>
+                  <motion.div
+                    key={step}
+                    ref={setContentNode}
+                    custom={dir}
+                    variants={stepVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: STEP_SLIDE / 1000, ease: [0.25, 0.1, 0.25, 1] }}
+                  >
+                    {renderStep()}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           </div>

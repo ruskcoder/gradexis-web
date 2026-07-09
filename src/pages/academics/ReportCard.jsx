@@ -75,6 +75,9 @@ export default function ReportCard() {
     'room',
     'att_credit',
     'ern_credit',
+    // PowerSchool per-term runs post a single letter/number grade + percent.
+    'grade',
+    'percent',
     'first',
     'second',
     'third',
@@ -111,6 +114,8 @@ export default function ReportCard() {
     'room': 'Room',
     'att_credit': 'Att Credit',
     'ern_credit': 'Ern Credit',
+    'grade': 'Grade',
+    'percent': '%',
     'first': '1st',
     'second': '2nd',
     'third': '3rd',

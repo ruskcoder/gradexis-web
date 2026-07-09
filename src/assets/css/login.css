@@ -28,24 +28,12 @@
     @apply flex flex-col items-center justify-center;
 }
 
-/* Wizard step transitions. Only the active step is ever mounted, so a jump
-   between non-adjacent steps never flashes the ones in between; the incoming
-   step slides in from the side the navigation is heading. */
+/* Wizard step transitions. Only the active step is ever mounted at a time; the
+   horizontal slide between steps is driven by Framer Motion (AnimatePresence +
+   translateX) in Login.jsx. This wrapper just clips the sliding content and
+   smoothly animates the container height as each step's content changes size. */
 .login-step-viewport {
     width: 100%;
     overflow: hidden;
     transition: height 320ms ease;
 }
-
-@keyframes login-slide-in-right {
-    from { opacity: 0; transform: translateX(28px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes login-slide-in-left {
-    from { opacity: 0; transform: translateX(-28px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-
-.login-step-forward { animation: login-slide-in-right 320ms ease both; }
-.login-step-back    { animation: login-slide-in-left 320ms ease both; }

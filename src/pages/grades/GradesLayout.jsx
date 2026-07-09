@@ -16,10 +16,11 @@ import {
 } from "@/components/ui/resizable"
 import { useCurrentUser } from '@/lib/store'
 import { getClasses, getSingleClass } from '@/lib/grades-api'
-import { getLatestGradesLoad, getInitialTerm, getTermList, hasStorageData, addGradesLoad } from '@/lib/grades-store'
+import { getLatestGradesLoad, getInitialTerm, getTermList, getTermTree, getHasSubterms, hasStorageData, addGradesLoad, reconstructAllInOneClassesFromHistory, reconstructClassDetailFromHistory, hasClassDetailInStorage } from '@/lib/grades-store'
 import { transformGroupsToCategories } from '@/lib/utils'
+import { flatForest, pathToLabel, barsForPath } from '@/lib/term-tree'
 import { PremiumDialog } from '@/components/custom/premium-dialog'
-import { ChevronLeft, GitCommitHorizontal, Loader2 } from 'lucide-react'
+import { ChevronLeft, GitCommitHorizontal, Loader2, HardDriveDownload } from 'lucide-react'
 
 // Matches the CSS `ease` used across the app so the term transition curve is
 // identical to the rest of the UI. A pure opacity cross-fade (no horizontal
@@ -47,13 +48,16 @@ const gradeItemVariants = {
 export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }) {
   const [terms, setTerms] = useState([]);
   const [currentTerm, setCurrentTerm] = useState('');
-  // Skyward-style portals return every term's averages in one payload plus a
-  // `subterms` map (e.g. { "1ST": ["PR1","PR2"] }). When present we render a
-  // second tab bar (the subtabs) under the term tabs and read grades from each
-  // class's `averages` dict by the selected label — no re-fetch per term.
-  const [subtermsMap, setSubtermsMap] = useState({});
+  // All-in-one portals (Skyward/PowerSchool) return every term's averages in one
+  // payload plus a `termTree` — a nested forest of columns that cascade to
+  // arbitrary depth (PR → term → semester → year). The roots are the top tabs;
+  // each deeper level of the selected path renders its own subtab bar. Grades
+  // are read from each class's `averages` dict by the deepest selected label, so
+  // there's no re-fetch per term.
+  const [termTree, setTermTree] = useState([]);
   const [hasSubterms, setHasSubterms] = useState(false);
-  const [currentSubterm, setCurrentSubterm] = useState(null);
+  // Root→node labels of the currently-selected column (last entry = shown grade).
+  const [selectedPath, setSelectedPath] = useState([]);
   const [allInOneClasses, setAllInOneClasses] = useState(null);
   const [progressByTerm, setProgressByTerm] = useState({});
   const [classesDataByTerm, setClassesDataByTerm] = useState({});
@@ -90,17 +94,26 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
           setProgressByTerm(prev => ({ ...prev, [key]: { percent: chunk.percent, message: chunk.message } }));
         } else if (chunk.success === true) {
           if (initial) {
-            setTerms(chunk.termList);
+            // The forest drives the tabs: its roots are the top tabs, deeper
+            // levels the cascading subtabs. Portals without a `termTree` (HAC,
+            // per-term re-fetch) fall back to a flat depth-1 forest = the terms.
+            const forest = chunk.termTree?.length ? chunk.termTree : flatForest(chunk.termList);
+            setTermTree(forest);
+            setTerms(forest.map((n) => n.label));
+            setHasSubterms(!!chunk.hasSubterms);
 
-            // Detect the all-in-one (Skyward-style) shape: a `subterms` map or
+            // Detect the all-in-one (Skyward-style) shape: a `termTree` or
             // per-class `averages` dicts mean every term is already in-hand.
             const allInOne = !!chunk.hasSubterms || (chunk.classes?.[0]?.averages != null);
-            setHasSubterms(!!chunk.hasSubterms);
-            setSubtermsMap(chunk.subterms || {});
             if (allInOne) setAllInOneClasses(chunk.classes);
 
+            // Default selection: the path to the API's current term (a leaf), so
+            // the right top tab + every subtab down to it start selected.
+            const path = pathToLabel(forest, chunk.term);
+            const defaultPath = path.length ? path : [chunk.term];
             if (!userHasSelectedTermRef.current) {
-              setCurrentTerm(chunk.term);
+              setCurrentTerm(defaultPath[0]);
+              setSelectedPath(defaultPath);
             }
             setClassesDataByTerm(prev => ({ ...prev, [chunk.term]: chunk.classes }));
 
@@ -148,7 +161,8 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
   const handleTabChange = (term) => {
     userHasSelectedTermRef.current = true;
     setCurrentTerm(term);
-    setCurrentSubterm(null);
+    // Reset the drill-down to the freshly-selected top tab.
+    setSelectedPath([term]);
     setSelectedGrade(null);
     // All-in-one portals already hold every term's grades — just switch labels.
     if (allInOneClasses) return;
@@ -156,20 +170,35 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
     fetchClasses(term);
   };
 
-  const handleSubtermChange = (subterm) => {
-    // The first pill re-selects the parent term itself (its own overall grade).
-    setCurrentSubterm(subterm === currentTerm ? null : subterm);
+  // Select a column at subtab-bar level `level`. Selecting the parent itself
+  // (value === the bar's parent) collapses back to that level's own grade;
+  // selecting a child drills one level deeper.
+  const handleSubtabChange = (level, value, parent) => {
+    setSelectedPath((prev) => {
+      const base = prev.slice(0, level + 1);
+      return value === parent ? base : [...base, value];
+    });
     setSelectedGrade(null);
   };
 
-  // The label whose grade/detail we actually show: the chosen subterm, else the
-  // selected term. Resolve a class's grade from its averages dict (Skyward) or
-  // its single `average` (HAC and other per-term portals).
-  const effectiveTerm = currentSubterm || currentTerm;
+  // The label whose grade/detail we actually show: the deepest selected column.
+  // Resolve a class's grade from its averages dict (all-in-one portals) or its
+  // single `average` (HAC and other per-term portals).
+  const effectiveTerm = selectedPath[selectedPath.length - 1] || currentTerm;
   const resolveGrade = (course) =>
     course && course.averages ? (course.averages[effectiveTerm] ?? '') : course?.average;
-  const subtabsForTerm = hasSubterms ? (subtermsMap[currentTerm] || []) : [];
+  const subtabBars = hasSubterms ? barsForPath(termTree, selectedPath) : [];
   const displayClasses = allInOneClasses || classesDataByTerm[currentTerm];
+  // All-in-one portals (PowerSchool/Skyward) return ONE class list spanning every
+  // term; a class that is "not in session" for the selected term has no entry for
+  // it in its `averages` map (PowerSchool's greyed-out notInSession cell drops the
+  // key entirely). Hide those so a class only shows under the terms it actually
+  // exists in. An in-session-but-ungraded term keeps an empty-string entry, so key
+  // presence — not truthiness — is the test. Per-term portals (HAC) already return
+  // exactly the term's classes and carry no `averages` map, so they pass through.
+  const visibleClasses = (displayClasses || []).filter((course) =>
+    course && course.averages ? (effectiveTerm in course.averages) : true
+  );
 
   // Averages-only portals (Skyward) hand back grades without assignment scores;
   // fetch the per-class detail on demand so every right-panel element (grades,
@@ -177,6 +206,9 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
   // and persist that detail into history for the storage/timeline features.
   const [detailByKey, setDetailByKey] = useState({});
   const [detailLoadingKey, setDetailLoadingKey] = useState(null);
+  // Lets "Load from Storage" abort the in-flight /single-class fetch so its late
+  // response can't overwrite the storage snapshot we just showed.
+  const detailCancelRef = useRef(null);
   const detailKey = selectedGrade ? `${selectedGrade.course}|${effectiveTerm}` : null;
   const needsDetail = !!selectedGrade && !isTimeTravelMode &&
     !(selectedGrade.scores && selectedGrade.scores.length) && !!selectedGrade.averages;
@@ -184,6 +216,7 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
   useEffect(() => {
     if (!needsDetail || !detailKey || detailByKey[detailKey]) return;
     let cancelled = false;
+    detailCancelRef.current = { key: detailKey, cancel: () => { cancelled = true; } };
     setDetailLoadingKey(detailKey);
     getSingleClass(selectedGrade.course, effectiveTerm)
       .then((data) => {
@@ -218,13 +251,35 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
 
     if (latestLoad) {
       if (isInitialLoad) {
-        const storedTermList = getTermList();
-        setTerms(storedTermList);
-        setCurrentTerm(termToLoad);
+        // Rebuild the cascade from storage: prefer the live forest, else the
+        // persisted `termTree` (so nested subtabs survive an offline load), and
+        // only fall back to a flat forest when no tree was ever stored.
+        const storedTree = getTermTree();
+        const forest = termTree.length
+          ? termTree
+          : (storedTree.length ? storedTree : flatForest(getTermList()));
+        const allInOne = !!(hasSubterms || getHasSubterms());
+        setTermTree(forest);
+        setHasSubterms(allInOne);
+        setTerms(forest.map((n) => n.label));
+        const path = pathToLabel(forest, termToLoad);
+        const defaultPath = path.length ? path : [termToLoad];
+        setCurrentTerm(defaultPath[0]);
+        setSelectedPath(defaultPath);
+        // All-in-one portals resolve grades from a per-class `averages` dict, so
+        // rebuild that from the full history; the top tab may be a coarse root
+        // while the selected leaf differs, and a single per-term class list keyed
+        // by the leaf wouldn't render under the root.
+        if (allInOne) {
+          setAllInOneClasses(reconstructAllInOneClassesFromHistory());
+        }
         setClassesDataByTerm(prev => ({ ...prev, [termToLoad]: latestLoad.classes }));
         setLoadingTerms(prev => ({ ...prev, initial: false }));
-        setStorageMode(prev => ({ ...prev, [termToLoad]: true }));
-        setLastLoadedDate(prev => ({ ...prev, [termToLoad]: new Date(latestLoad.loadedAt) }));
+        // Flag storage mode + last-loaded on both the leaf term and the (possibly
+        // coarser) root tab now shown, so the "Last Loaded" banner appears.
+        const loadedDate = new Date(latestLoad.loadedAt);
+        setStorageMode(prev => ({ ...prev, [termToLoad]: true, [defaultPath[0]]: true }));
+        setLastLoadedDate(prev => ({ ...prev, [termToLoad]: loadedDate, [defaultPath[0]]: loadedDate }));
       } else {
         setClassesDataByTerm(prev => ({ ...prev, [termToLoad]: latestLoad.classes }));
         setLoadingTerms(prev => ({ ...prev, [termToLoad]: false }));
@@ -233,6 +288,20 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
       }
     }
   };
+
+  // Populate the grade-details panel from stored history instead of the network —
+  // pulls the selected class's latest scores/categories for the shown term. Also
+  // aborts any in-flight fetch so it can't clobber the storage snapshot (this is
+  // what lets the user "stop the load in place and load from storage instead").
+  const handleLoadDetailFromStorage = () => {
+    if (!selectedGrade || !detailKey) return;
+    if (detailCancelRef.current?.key === detailKey) detailCancelRef.current.cancel();
+    const detail = reconstructClassDetailFromHistory(effectiveTerm, selectedGrade.course, selectedGrade.name);
+    if (detail) setDetailByKey((prev) => ({ ...prev, [detailKey]: detail }));
+    setDetailLoadingKey((k) => (k === detailKey ? null : k));
+  };
+  const detailStorageAvailable = !!selectedGrade && !isTimeTravelMode &&
+    hasClassDetailInStorage(effectiveTerm, selectedGrade.course, selectedGrade.name);
 
   const formatDate = (date) => {
     if (!date) return '';
@@ -289,15 +358,17 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                   </TabsTrigger>
                 ))}
               </TabsList>}
-              {subtabsForTerm.length > 0 && (
-                <div className="flex w-full gap-1 mt-2 rounded-lg bg-muted p-1">
-                  {[currentTerm, ...subtabsForTerm].map((sub) => {
-                    const active = effectiveTerm === sub;
+              {/* One subtab bar per level of the selected path that has children,
+                  so the cascade shows as many rows as the district defines. */}
+              {subtabBars.map((bar, level) => (
+                <div key={bar.parent} className="flex w-full gap-1 mt-2 rounded-lg bg-muted p-1">
+                  {[bar.parent, ...bar.options].map((sub) => {
+                    const active = bar.selected === sub;
                     return (
                       <button
                         key={sub}
                         type="button"
-                        onClick={() => handleSubtermChange(sub)}
+                        onClick={() => handleSubtabChange(level, sub, bar.parent)}
                         className={`flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                           active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                         }`}
@@ -307,7 +378,7 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                     );
                   })}
                 </div>
-              )}
+              ))}
               {/* overflow-x-hidden kills the horizontal scrollbar; the inner
                   overflow-hidden wrapper clips the reveal's small vertical drift
                   so it can't extend the vertical scroll area either. */}
@@ -315,7 +386,10 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                 <div className="overflow-hidden">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
-                    key={currentTerm || 'initial'}
+                    // Key on the deepest selected label (effectiveTerm), not just
+                    // the top tab, so the fade + list cascade replays when ANY
+                    // level changes — top tab or a deeper subtab.
+                    key={effectiveTerm || currentTerm || 'initial'}
                     variants={animationsEnabled ? termPageVariants : undefined}
                     initial={animationsEnabled ? 'enter' : false}
                     animate={animationsEnabled ? 'center' : undefined}
@@ -342,7 +416,7 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                             Last Loaded: {formatDate(lastLoadedDate[currentTerm])}
                           </div>
                         )}
-                        {displayClasses.length === 0 ? (
+                        {visibleClasses.length === 0 ? (
                           <div className="flex items-center justify-center h-16">
                             <p className="text-muted-foreground">No classes to display</p>
                           </div>
@@ -353,7 +427,7 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                             animate={animationsEnabled ? 'show' : undefined}
                           >
                             <GradesList variant={user.gradesView}>
-                              {displayClasses.map((course, index) => {
+                              {visibleClasses.map((course, index) => {
                                 const grade = resolveGrade(course);
                                 return (
                                   <motion.div
@@ -408,6 +482,12 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
               <div className='text-center text-sm font-medium text-muted-foreground flex-1 py-1'>
                 {selectedGrade ? selectedGrade.name : 'Grade Details'}
               </div>
+              {/* The grade-detail "Load from Storage" control lives below the
+                  loading spinner (mirroring the main grades page), not up here —
+                  so this slot is just a spacer to keep the title centered. */}
+              {!isTimeTravelMode && !isTimelineMode && selectedGrade ? (
+                <div className="w-7"></div>
+              ) : null}
               {isTimeTravelMode ? (
                 <div className="w-7"></div>
               ) : null}
@@ -428,6 +508,18 @@ export function GradesLayout({ showTitle = true, pageTitle = 'Grades', element }
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
                   <Loader2 className="animate-spin" size={28} />
                   <span className="text-sm">Loading assignments…</span>
+                  {/* Same affordance as the main grades page: stop the in-flight
+                      fetch and show the last stored assignments instead. */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1"
+                    onClick={handleLoadDetailFromStorage}
+                    disabled={!detailStorageAvailable}
+                  >
+                    <HardDriveDownload size={16} />
+                    Load from Storage
+                  </Button>
                 </div>
               ) : (
                 React.cloneElement(element, { selectedGrade: enrichedGrade, term: effectiveTerm })

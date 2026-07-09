@@ -1,4 +1,4 @@
-import { LOGIN_TYPES, API_URL, API_PLATFORM_ENDPOINTS, LOGIN_ENDPOINT, DISTRICTS_ENDPOINT, PLATFORMS, CLASSES_ENDPOINT, SINGLE_CLASS_ENDPOINT, ATTENDANCE_ENDPOINT, SCHEDULE_ENDPOINT, BELL_SCHEDULE_ENDPOINT, TRANSCRIPT_ENDPOINT, REPORT_CARD_ENDPOINT, PROGRESS_REPORT_ENDPOINT, TEACHERS_ENDPOINT } from "@/lib/constants";
+import { LOGIN_TYPES, API_URL, API_PLATFORM_ENDPOINTS, LOGIN_ENDPOINT, DISTRICTS_ENDPOINT, AUTH_METHODS_ENDPOINT, PLATFORMS, CLASSES_ENDPOINT, SINGLE_CLASS_ENDPOINT, ATTENDANCE_ENDPOINT, SCHEDULE_ENDPOINT, BELL_SCHEDULE_ENDPOINT, TRANSCRIPT_ENDPOINT, REPORT_CARD_ENDPOINT, PROGRESS_REPORT_ENDPOINT, TEACHERS_ENDPOINT } from "@/lib/constants";
 import { pathMerge } from "@/lib/utils";
 import { setSession, currentUser, getSession, useStore } from "@/lib/store";
 import { initializeGradesStore, addGradesLoad } from "@/lib/grades-store";
@@ -6,9 +6,19 @@ import { initializeGradesStore, addGradesLoad } from "@/lib/grades-store";
 type Platform = typeof PLATFORMS[number];
 type LoginType = typeof LOGIN_TYPES[number];
 
+/** Identity of the signed-in account, so cached responses never leak across a
+ *  sign-out / sign-in or account switch (the cache is one global map, not
+ *  per-user). Without this, switching accounts showed the previous account's
+ *  grades until a manual refresh. */
+function userScope(): string {
+  const u = currentUser();
+  if (!u) return 'anon';
+  return `${u.platform}|${u.link}|${u.username}|${u.studentId || ''}`;
+}
+
 function generateCacheKey(endpoint: string, options: Record<string, any> = {}): string {
   const optionsStr = Object.keys(options).length > 0 ? JSON.stringify(options) : 'no-options';
-  return `${endpoint}:${optionsStr}`;
+  return `${userScope()}::${endpoint}:${optionsStr}`;
 }
 
 function getCachedValue(key: string): any {
@@ -133,6 +143,36 @@ export async function fetchDistrictDetails(
     return { multiple: !!data.multiple, districts: data.districts || [] };
   } catch {
     return { multiple: false, districts: [] };
+  }
+}
+
+/**
+ * Probe an arbitrary (Custom-flow) portal `link` for the sign-in methods it
+ * offers. Only PowerSchool distinguishes here — its portals may front a
+ * credentials form (parent login), Microsoft SSO (student login), or both. HAC /
+ * Skyward always report credentials-only. Never throws — on any failure reports
+ * credentials-only so the form still works.
+ */
+export async function fetchAuthMethods(
+  platform: Platform,
+  link: string
+): Promise<{ credentials: boolean; microsoft: boolean; ssoUrl: string | null }> {
+  try {
+    const url = pathMerge(API_URL, API_PLATFORM_ENDPOINTS[platform], AUTH_METHODS_ENDPOINT);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loginData: { link } }),
+    });
+    const data = await response.json();
+    if (!response.ok || data.success === false) return { credentials: true, microsoft: false, ssoUrl: null };
+    return {
+      credentials: data.credentials !== false,
+      microsoft: !!data.microsoft,
+      ssoUrl: data.ssoUrl || null,
+    };
+  } catch {
+    return { credentials: true, microsoft: false, ssoUrl: null };
   }
 }
 
@@ -284,7 +324,11 @@ export async function* getClasses(term?: string) {
             if (term) {
               addGradesLoad(term, data.classes);
             } else {
-              initializeGradesStore(data.term, data.termList, data.term, data.classes);
+              initializeGradesStore(data.term, data.termList, data.term, data.classes, {
+                termTree: data.termTree,
+                currentTerms: data.currentTerms,
+                hasSubterms: data.hasSubterms,
+              });
             }
 
             yield data;
